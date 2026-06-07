@@ -442,9 +442,13 @@ function renderNanny(){
 
 function changeShiftDate(val){
   activeShiftDate=val;
+  // Only mark as edited if it's a past date AND shift already has clockOut
   if(val!==today()){
-    const s=getOrCreate(val);
-    if(!s.edited){ s.edited=true; s.editedAt=new Date().toLocaleString('ru-RU'); saveShift(val,s); }
+    const s=getShift(val);
+    if(s && s.clockOut && !s.edited){
+      s.edited=true; s.editedAt=new Date().toLocaleString('ru-RU');
+      saveShift(val,s);
+    }
   }
   renderNanny();
 }
@@ -481,8 +485,12 @@ function renderWeekday(el,shift,readonly){
   // Clock card
   const cc=mkCard(`Смена ${date}`);
   if(!shift.clockIn){
-    if(!readonly) cc.innerHTML+=`<button class="btn btn-primary" onclick="clockIn()">▶ Отметить приход</button>`;
-    else cc.innerHTML+=`<div class="text-muted text-sm">Смена не начата</div>`;
+    if(!readonly){
+      cc.innerHTML+=`<p class="text-muted text-sm mb-8">Нажмите, чтобы начать рабочий день</p>
+        <button class="btn btn-primary" onclick="clockIn()">▶ Отметить приход</button>`;
+    } else {
+      cc.innerHTML+=`<div class="text-muted text-sm">Смена не начата</div>`;
+    }
   } else {
     const otInfo=shift.clockOut&&shift.overtime
       ?`<span class="status-badge ot"><span class="status-dot"></span>Переработка с ${cfg.overtimeStartHour}:00</span>`:
@@ -778,39 +786,51 @@ function openEditModal(date){
     tasks.forEach(t=>{
       const state=shift.tasks[t.id];
       const comment=shift.comments[t.id]||'';
-      tasksHtml+=`<div class="task-edit-item">
-        <select style="background:var(--surface2);border:0.5px solid var(--border2);border-radius:6px;color:var(--text);padding:4px 8px;font-size:0.8rem;outline:none" onchange="editTaskState('${date}','${t.id}',this.value)">
+      const isNA=state==='na';
+      tasksHtml+=`
+      <div class="task-edit-item">
+        <select id="es-${t.id}" style="background:var(--surface2);border:0.5px solid var(--border2);border-radius:6px;color:var(--text);padding:4px 8px;font-size:0.8rem;outline:none"
+          onchange="editTaskState('${date}','${t.id}',this.value)">
           <option value="" ${!state?'selected':''}>Не выполнено (вычет)</option>
           <option value="true" ${state===true?'selected':''}>✓ Выполнено</option>
-          <option value="na" ${state==='na'?'selected':''}>— Без вычета (с причиной)</option>
+          <option value="na" ${isNA?'selected':''}>— Без вычета (с причиной)</option>
         </select>
         <span style="font-size:0.85rem;flex:1">${t.label}</span>
       </div>
-      ${state==='na'?`<div style="padding:0 0 8px 10px"><input class="form-input" style="font-size:0.8rem;padding:6px 10px" placeholder="Причина..." value="${comment}" onchange="editTaskComment('${date}','${t.id}',this.value)"></div>`:''}`
+      <div id="ec-wrap-${t.id}" style="padding:0 0 8px 0;display:${isNA?'block':'none'}">
+        <input class="form-input" id="ec-${t.id}" style="font-size:0.8rem;padding:6px 10px"
+          placeholder="Причина невыполнения..."
+          value="${comment}"
+          onchange="editTaskComment('${date}','${t.id}',this.value)">
+      </div>`;
     });
     tasksHtml+=`</div>`;
   }
+  const cfg=getCfg();
   document.getElementById('edit-modal-body').innerHTML=`
-    ${shift.nannyEditReason?`<div class="edited-notice" style="margin-bottom:14px">✎ Няня исправила запись: <strong>${shift.nannyEditReason}</strong> <span style="color:var(--text3);font-size:0.75rem">(${shift.editedAt||''})</span></div>`:''}
-    <div class="form-row"><label class="form-label">Приход</label><input class="form-input" type="time" value="${shift.clockIn||''}" onchange="editField('${date}','clockIn',this.value)"></div>
-    <div class="form-row"><label class="form-label">Уход</label><input class="form-input" type="time" value="${shift.clockOut||''}" onchange="editField('${date}','clockOut',this.value)"></div>
-    <div class="form-row"><label class="form-label">Переработка после ${getCfg().overtimeStartHour}:00</label>
-      <select class="form-input" onchange="editField('${date}','overtime',this.value==='true')">
-        <option value="false" ${!shift.overtime?'selected':''}>Нет</option>
-        <option value="true" ${shift.overtime?'selected':''}>Да (начислить)</option>
-      </select>
-    </div>
+    ${shift.nannyEditReason?`<div class="edited-notice" style="margin-bottom:14px">✎ Няня исправила: <strong>${shift.nannyEditReason}</strong> <span style="color:var(--text3);font-size:0.75rem">(${shift.editedAt||''})</span></div>`:''}
+    <div class="form-row"><label class="form-label">Приход</label>
+      <input class="form-input" type="time" value="${shift.clockIn||''}" onchange="editField('${date}','clockIn',this.value)"></div>
+    <div class="form-row"><label class="form-label">Уход</label>
+      <input class="form-input" type="time" value="${shift.clockOut||''}" onchange="editField('${date}','clockOut',this.value)"></div>
     <div class="form-row"><label class="form-label">Тип дня</label>
       <select class="form-input" onchange="editField('${date}','weekendMode',this.value==='true')">
         <option value="false" ${!shift.weekendMode?'selected':''}>Будни</option>
         <option value="true" ${shift.weekendMode?'selected':''}>Выходной</option>
-      </select>
-    </div>
-    <div class="form-row"><label class="form-label">Премия (₸)</label><input class="form-input" type="number" min="0" value="${shift.bonus||0}" onchange="editField('${date}','bonus',Number(this.value))"></div>
+      </select></div>
+    <div class="form-row"><label class="form-label">Переработка после ${cfg.overtimeStartHour}:00</label>
+      <select class="form-input" onchange="editField('${date}','overtime',this.value==='true')">
+        <option value="false" ${!shift.overtime?'selected':''}>Нет</option>
+        <option value="true" ${shift.overtime?'selected':''}>Да — начислить</option>
+      </select></div>
+    <div class="form-row"><label class="form-label">Премия (₸)</label>
+      <input class="form-input" type="number" min="0" value="${shift.bonus||0}" onchange="editField('${date}','bonus',Number(this.value))"></div>
     ${tasksHtml}
-    <div class="flex gap-8 mt-16">
+    <div class="flex gap-8 mt-16" style="flex-wrap:wrap">
+      <button class="btn btn-danger btn-sm" onclick="deleteShift('${date}')">🗑 Удалить запись</button>
+      <div style="flex:1"></div>
       <button class="btn btn-secondary btn-sm" onclick="closeModal('edit-modal')">Закрыть</button>
-      <button class="btn btn-primary btn-sm" onclick="finalizeEdit('${date}')">Сохранить и пересчитать</button>
+      <button class="btn btn-primary btn-sm" onclick="finalizeEdit('${date}')">Сохранить ✓</button>
     </div>`;
   document.getElementById('edit-modal').classList.add('open');
 }
@@ -824,16 +844,32 @@ function editTaskState(date,taskId,val){
   else if(val==='true') s.tasks[taskId]=true;
   else s.tasks[taskId]='na';
   s.edited=true; s.editedAt=new Date().toLocaleString('ru-RU');
-  saveShift(date,s); openEditModal(date);
+  saveShift(date,s);
+  // show/hide comment field inline without re-opening modal
+  const wrap=document.getElementById('ec-wrap-'+taskId);
+  if(wrap) wrap.style.display=(val==='na')?'block':'none';
 }
 function editTaskComment(date,taskId,val){
   const s=getOrCreate(date); s.comments[taskId]=val; saveShift(date,s);
 }
 function finalizeEdit(date){
   const s=getOrCreate(date);
+  // recalc overtime based on clockOut
+  if(!s.weekendMode && s.clockOut){
+    const cfg=getCfg();
+    // only auto-update if employer didn't manually set it (we keep manual override)
+  }
   const {total}=calcSalary(s); s.salary=total;
   saveShift(date,s); syncToSheets(s);
   closeModal('edit-modal'); renderHistory();
+}
+function deleteShift(date){
+  if(!confirm('Удалить запись за '+fmtDate(date)+'?\nЭто действие нельзя отменить.')) return;
+  const shifts=load('shifts',{});
+  delete shifts[date];
+  save('shifts',shifts);
+  closeModal('edit-modal');
+  renderHistory();
 }
 
 // ─── SALARY TAB ───────────────────────────────────────────────────────────────
