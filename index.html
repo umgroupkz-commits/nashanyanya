@@ -1454,8 +1454,12 @@ function renderSettings(){
   </div>
   <div class="card">
     <div class="card-title">Синхронизация</div>
-    <button class="btn btn-secondary btn-sm" onclick="syncAll()">↑ Синхронизировать всю историю</button>
+    <div class="flex gap-8" style="flex-wrap:wrap">
+      <button class="btn btn-secondary btn-sm" onclick="syncAll()">↓ Загрузить из таблицы</button>
+      <button class="btn btn-ghost btn-sm" onclick="testConnection()">🔍 Проверить связь</button>
+    </div>
     <div id="sync-msg" style="font-size:0.75rem;color:var(--text3);margin-top:8px"></div>
+    <div id="sync-debug" style="font-size:0.72rem;color:var(--text3);margin-top:6px;font-family:'JetBrains Mono',monospace;word-break:break-all;max-height:120px;overflow-y:auto"></div>
   </div>
   <div class="card">
     <div class="card-title">Сброс</div>
@@ -1463,6 +1467,38 @@ function renderSettings(){
   </div>`;
 
   el.innerHTML=html;
+}
+
+function sRow(label,key,val){
+  return `<div class="settings-row"><div><div style="font-size:0.9rem">${label}</div></div>
+    <input class="settings-input" type="number" value="${val}" onchange="saveCfg('${key}',Number(this.value))"></div>`;
+}
+
+function testConnection(){
+  const dbg=document.getElementById('sync-debug');
+  const msg=document.getElementById('sync-msg');
+  if(msg){ msg.textContent='Проверяем...'; msg.style.color='var(--text2)'; }
+  if(dbg) dbg.textContent='';
+  sheetsRead(
+    {action:'getAll'},
+    function(res){
+      const shifts=res.data&&res.data.shifts?Object.keys(res.data.shifts).length:0;
+      if(msg){ msg.textContent=`✓ Связь есть! Смен в таблице: ${shifts}`; msg.style.color='var(--green)'; }
+      if(dbg) dbg.textContent=JSON.stringify(res.data&&res.data.shifts?Object.keys(res.data.shifts):[]).slice(0,200);
+      // Apply loaded data
+      if(res.data){
+        const d=res.data;
+        if(d.shifts && Object.keys(d.shifts).length){ lsSet('shifts',d.shifts); }
+        if(d.cfg) lsSet('cfg',d.cfg);
+        if(d.tasks && d.tasks.length) lsSet('tasks',d.tasks);
+      }
+      renderHistory();
+    },
+    function(err){
+      if(msg){ msg.textContent='✗ Ошибка: '+err.message; msg.style.color='var(--red)'; }
+      if(dbg) dbg.textContent='URL: '+SHEETS_URL.slice(0,60)+'...';
+    }
+  );
 }
 
 function sRow(label,key,val){
