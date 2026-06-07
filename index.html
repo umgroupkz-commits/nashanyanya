@@ -32,10 +32,10 @@ body{background:var(--bg);color:var(--text);font-family:'Geologica',sans-serif;m
 #app{display:none;min-height:100vh;flex-direction:column}
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;border-bottom:0.5px solid var(--border);background:var(--surface)}
 .topbar-brand{font-size:1rem;font-weight:600;color:var(--accent);letter-spacing:-0.02em}
-.topbar-info{display:flex;align-items:center;gap:16px;font-size:0.8rem;color:var(--text2)}
+.topbar-info{display:flex;align-items:center;gap:16px}
 .logout-btn{background:transparent;border:0.5px solid var(--border);color:var(--text2);padding:5px 12px;border-radius:6px;cursor:pointer;font-family:'Geologica',sans-serif;font-size:0.75rem;transition:all 0.2s}
 .logout-btn:hover{border-color:var(--border2);color:var(--text)}
-.main-tabs{display:flex;border-bottom:0.5px solid var(--border);background:var(--surface);padding:0 24px;gap:0;overflow-x:auto}
+.main-tabs{display:flex;border-bottom:0.5px solid var(--border);background:var(--surface);padding:0 24px;overflow-x:auto}
 .tab-btn{padding:12px 18px;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--text2);cursor:pointer;font-family:'Geologica',sans-serif;font-size:0.85rem;transition:all 0.2s;margin-bottom:-0.5px;white-space:nowrap}
 .tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
 .tab-btn:hover:not(.active){color:var(--text)}
@@ -45,10 +45,8 @@ body{background:var(--bg);color:var(--text);font-family:'Geologica',sans-serif;m
 .status-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:500}
 .status-badge.work{background:rgba(74,222,128,0.12);color:var(--green);border:0.5px solid rgba(74,222,128,0.3)}
 .status-badge.off{background:var(--surface2);color:var(--text2);border:0.5px solid var(--border)}
-.status-badge.overtime{background:rgba(232,200,74,0.12);color:var(--accent);border:0.5px solid rgba(232,200,74,0.3)}
-.status-badge.edited{background:rgba(96,165,250,0.12);color:var(--blue);border:0.5px solid rgba(96,165,250,0.3)}
+.status-badge.ot{background:rgba(232,200,74,0.12);color:var(--accent);border:0.5px solid rgba(232,200,74,0.3)}
 .status-dot{width:6px;height:6px;border-radius:50%;background:currentColor}
-.time-display{font-family:'JetBrains Mono',monospace;font-size:2.8rem;font-weight:400;color:var(--text);letter-spacing:-0.02em;line-height:1}
 .btn{padding:12px 24px;border-radius:var(--radius);border:none;cursor:pointer;font-family:'Geologica',sans-serif;font-size:0.9rem;font-weight:500;transition:all 0.2s;display:inline-flex;align-items:center;gap:8px}
 .btn-primary{background:var(--accent);color:#0f0f11}
 .btn-primary:hover{filter:brightness(1.1)}
@@ -58,7 +56,9 @@ body{background:var(--bg);color:var(--text);font-family:'Geologica',sans-serif;m
 .btn-secondary:hover{background:var(--surface3)}
 .btn-ghost{background:transparent;color:var(--text2);border:0.5px solid var(--border)}
 .btn-ghost:hover{color:var(--text);border-color:var(--border2)}
-.btn:disabled{opacity:0.4;cursor:not-allowed;filter:none}
+.btn-wa{background:#25d366;color:#fff;border:none}
+.btn-wa:hover{filter:brightness(1.1)}
+.btn:disabled{opacity:0.4;cursor:not-allowed}
 .btn-sm{padding:7px 14px;font-size:0.8rem}
 .checklist-item{display:flex;align-items:flex-start;gap:12px;padding:14px 0;border-bottom:0.5px solid var(--border)}
 .checklist-item:last-child{border-bottom:none}
@@ -67,11 +67,9 @@ body{background:var(--bg);color:var(--text);font-family:'Geologica',sans-serif;m
 .check-box.checked::after{content:'✓';color:#fff;font-size:13px;font-weight:600}
 .check-box.na{background:var(--surface3);border-color:var(--border2)}
 .check-box.na::after{content:'—';color:var(--text3);font-size:11px}
-.check-label{flex:1;font-size:0.9rem;line-height:1.4;cursor:pointer}
+.check-label{flex:1;font-size:0.9rem;line-height:1.4}
 .check-label.done{text-decoration:line-through;color:var(--text2)}
 .check-freq{font-size:0.7rem;color:var(--text3);margin-top:2px}
-.comment-field{width:100%;background:var(--surface2);border:0.5px solid var(--border2);border-radius:8px;padding:8px 12px;color:var(--text);font-family:'Geologica',sans-serif;font-size:0.8rem;resize:none;outline:none}
-.comment-field:focus{border-color:var(--accent)}
 .salary-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .salary-item{background:var(--surface2);border-radius:var(--radius);padding:14px}
 .salary-item-label{font-size:0.7rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px}
@@ -87,19 +85,8 @@ body{background:var(--bg);color:var(--text);font-family:'Geologica',sans-serif;m
 .badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:0.7rem;font-weight:500}
 .badge-green{background:rgba(74,222,128,0.12);color:var(--green)}
 .badge-amber{background:rgba(232,200,74,0.12);color:var(--accent)}
-.badge-red{background:rgba(248,113,113,0.12);color:var(--red)}
 .badge-blue{background:rgba(96,165,250,0.12);color:var(--blue)}
 .badge-gray{background:var(--surface2);color:var(--text2)}
-.toggle{position:relative;width:44px;height:24px;flex-shrink:0}
-.toggle input{opacity:0;width:0;height:0}
-.toggle-slider{position:absolute;inset:0;background:var(--surface3);border-radius:12px;cursor:pointer;transition:0.2s}
-.toggle-slider::before{content:'';position:absolute;width:18px;height:18px;left:3px;top:3px;background:var(--text2);border-radius:50%;transition:0.2s}
-.toggle input:checked+.toggle-slider{background:var(--accent)}
-.toggle input:checked+.toggle-slider::before{transform:translateX(20px);background:#0f0f11}
-.toggle-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.overtime-card{padding:16px;border-radius:var(--radius);border:0.5px solid rgba(232,200,74,0.3);background:rgba(232,200,74,0.06);margin-bottom:16px}
-.weekend-notice{background:rgba(96,165,250,0.08);border:0.5px solid rgba(96,165,250,0.3);border-radius:var(--radius);padding:14px;margin-bottom:16px;font-size:0.85rem;color:var(--blue)}
-.done-screen{display:flex;flex-direction:column;align-items:center;gap:16px;padding:40px 20px;text-align:center}
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:100;align-items:flex-start;justify-content:center;padding-top:60px;overflow-y:auto}
 .modal-overlay.open{display:flex}
 .modal{background:var(--surface);border:0.5px solid var(--border2);border-radius:var(--radius-lg);padding:24px;max-width:500px;width:90%;position:relative;margin-bottom:40px}
@@ -109,44 +96,31 @@ body{background:var(--bg);color:var(--text);font-family:'Geologica',sans-serif;m
 .form-label{font-size:0.75rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;display:block}
 .form-input{width:100%;background:var(--surface2);border:0.5px solid var(--border2);border-radius:8px;padding:10px 14px;color:var(--text);font-family:'Geologica',sans-serif;font-size:0.9rem;outline:none}
 .form-input:focus{border-color:var(--accent)}
+select.form-input{cursor:pointer}
 .date-picker-row{display:flex;align-items:center;gap:10px;background:var(--surface2);border-radius:var(--radius);padding:10px 14px;margin-bottom:16px;border:0.5px solid var(--border)}
 .date-picker-row label{font-size:0.8rem;color:var(--text2)}
 .date-picker-row input[type=date]{background:transparent;border:none;color:var(--text);font-family:'Geologica',sans-serif;font-size:0.9rem;outline:none;cursor:pointer}
 .date-picker-row input[type=date]::-webkit-calendar-picker-indicator{filter:invert(0.6)}
 .edited-notice{background:rgba(96,165,250,0.08);border:0.5px solid rgba(96,165,250,0.3);border-radius:8px;padding:10px 14px;font-size:0.8rem;color:var(--blue);margin-bottom:14px}
+.warn-notice{background:rgba(248,113,113,0.08);border:0.5px solid rgba(248,113,113,0.3);border-radius:8px;padding:10px 14px;font-size:0.8rem;color:var(--red);margin-bottom:14px}
 .settings-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:0.5px solid var(--border)}
 .settings-row:last-child{border-bottom:none}
-.settings-label{font-size:0.9rem}
-.settings-sub{font-size:0.75rem;color:var(--text3);margin-top:2px}
-.settings-input{background:var(--surface2);border:0.5px solid var(--border2);border-radius:8px;padding:7px 12px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:0.9rem;outline:none;width:140px;text-align:right}
+.settings-input{background:var(--surface2);border:0.5px solid var(--border2);border-radius:8px;padding:7px 12px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:0.9rem;outline:none;width:150px;text-align:right}
 .settings-input:focus{border-color:var(--accent)}
 .task-edit-item{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:0.5px solid var(--border)}
 .task-edit-item:last-child{border-bottom:none}
 .task-edit-name{flex:1;background:var(--surface2);border:0.5px solid var(--border2);border-radius:8px;padding:7px 10px;color:var(--text);font-family:'Geologica',sans-serif;font-size:0.85rem;outline:none}
 .task-edit-name:focus{border-color:var(--accent)}
-select.form-input{cursor:pointer}
-/* PRINT */
-@media print{
-  body{background:#fff;color:#000}
-  #app{display:block!important}
-  .topbar,.main-tabs,.no-print{display:none!important}
-  #tab-salary{display:block!important}
-  .card{border:1px solid #ddd;background:#fff;break-inside:avoid}
-  .salary-total{background:#f9f9f9;border:1px solid #ccc}
-  .salary-total-value{color:#000}
-  .hist-table th,.hist-table td{color:#000;border-bottom:1px solid #eee}
-  .salary-item{background:#f5f5f5}
-  .salary-item-label,.salary-item-value{color:#000}
-  .print-header{display:block!important}
-}
-.print-header{display:none;text-align:center;margin-bottom:20px}
-.print-header h2{font-size:1.2rem;font-weight:600}
-.print-header p{font-size:0.85rem;color:#666;margin-top:4px}
+.weekend-notice{background:rgba(96,165,250,0.08);border:0.5px solid rgba(96,165,250,0.3);border-radius:var(--radius);padding:14px;margin-bottom:16px;font-size:0.85rem;color:var(--blue)}
+.one-time-badge{background:rgba(232,200,74,0.12);color:var(--accent);border:0.5px solid rgba(232,200,74,0.3);border-radius:4px;font-size:0.7rem;padding:1px 7px;margin-left:6px}
+.comment-field{width:100%;background:var(--surface2);border:0.5px solid var(--border2);border-radius:8px;padding:8px 12px;color:var(--text);font-family:'Geologica',sans-serif;font-size:0.8rem;resize:none;outline:none}
+.comment-field:focus{border-color:var(--accent)}
 .flex{display:flex}.gap-8{gap:8px}.gap-12{gap:12px}.items-center{align-items:center}.justify-between{justify-content:space-between}
 .mt-8{margin-top:8px}.mt-12{margin-top:12px}.mt-16{margin-top:16px}.mb-8{margin-bottom:8px}.mb-16{margin-bottom:16px}
 .text-sm{font-size:0.8rem}.text-muted{color:var(--text2)}.text-mono{font-family:'JetBrains Mono',monospace}
-.hidden{display:none!important}
-.w-full{width:100%}
+.hidden{display:none!important}.w-full{width:100%}
+/* квиток preview */
+.receipt-box{background:var(--surface2);border-radius:var(--radius);padding:16px;font-size:0.82rem;line-height:1.9;white-space:pre-wrap;font-family:'JetBrains Mono',monospace;color:var(--text2);max-height:340px;overflow-y:auto}
 </style>
 </head>
 <body>
@@ -155,22 +129,16 @@ select.form-input{cursor:pointer}
   <div><div class="pin-logo">Домашний трекер</div><div class="pin-sub">Введите PIN-код</div></div>
   <div class="pin-role-tabs">
     <button class="active" onclick="selectRole('nanny')">Няня</button>
-    <button onclick="selectRole('owner')">Хозяин</button>
+    <button onclick="selectRole('employer')">Работодатель</button>
   </div>
   <div class="pin-dots" id="pin-dots">
     <div class="pin-dot" id="d0"></div><div class="pin-dot" id="d1"></div>
     <div class="pin-dot" id="d2"></div><div class="pin-dot" id="d3"></div>
   </div>
   <div class="pin-pad">
-    <button class="pin-btn" onclick="pinPress('1')">1</button>
-    <button class="pin-btn" onclick="pinPress('2')">2</button>
-    <button class="pin-btn" onclick="pinPress('3')">3</button>
-    <button class="pin-btn" onclick="pinPress('4')">4</button>
-    <button class="pin-btn" onclick="pinPress('5')">5</button>
-    <button class="pin-btn" onclick="pinPress('6')">6</button>
-    <button class="pin-btn" onclick="pinPress('7')">7</button>
-    <button class="pin-btn" onclick="pinPress('8')">8</button>
-    <button class="pin-btn" onclick="pinPress('9')">9</button>
+    <button class="pin-btn" onclick="pinPress('1')">1</button><button class="pin-btn" onclick="pinPress('2')">2</button><button class="pin-btn" onclick="pinPress('3')">3</button>
+    <button class="pin-btn" onclick="pinPress('4')">4</button><button class="pin-btn" onclick="pinPress('5')">5</button><button class="pin-btn" onclick="pinPress('6')">6</button>
+    <button class="pin-btn" onclick="pinPress('7')">7</button><button class="pin-btn" onclick="pinPress('8')">8</button><button class="pin-btn" onclick="pinPress('9')">9</button>
     <button class="pin-btn" onclick="pinClear()" style="font-size:0.8rem;color:var(--text2)">сброс</button>
     <button class="pin-btn" onclick="pinPress('0')">0</button>
     <button class="pin-btn" onclick="pinBack()">⌫</button>
@@ -182,7 +150,7 @@ select.form-input{cursor:pointer}
   <div class="topbar">
     <div class="flex items-center gap-12">
       <span class="topbar-brand">Домашний трекер</span>
-      <span id="role-badge" class="status-badge off"><span class="status-dot"></span> —</span>
+      <span id="role-badge" class="status-badge off"><span class="status-dot"></span>—</span>
     </div>
     <div class="topbar-info">
       <span id="today-date" style="font-size:0.75rem;color:var(--text3);font-family:'JetBrains Mono',monospace"></span>
@@ -198,7 +166,7 @@ select.form-input{cursor:pointer}
   </div>
 </div>
 
-<!-- Comment Modal -->
+<!-- Comment modal -->
 <div class="modal-overlay" id="comment-modal">
   <div class="modal">
     <button class="modal-close" onclick="closeModal('comment-modal')">✕</button>
@@ -213,7 +181,20 @@ select.form-input{cursor:pointer}
   </div>
 </div>
 
-<!-- Edit Shift Modal -->
+<!-- Close shift confirm modal -->
+<div class="modal-overlay" id="close-confirm-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('close-confirm-modal')">✕</button>
+    <div class="modal-title">Закрыть смену?</div>
+    <div id="close-confirm-body"></div>
+    <div class="flex gap-8 mt-16">
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('close-confirm-modal')">Вернуться</button>
+      <button class="btn btn-danger btn-sm" onclick="confirmClockOut()">Закрыть со вычетом</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit shift modal -->
 <div class="modal-overlay" id="edit-modal">
   <div class="modal" style="max-width:560px">
     <button class="modal-close" onclick="closeModal('edit-modal')">✕</button>
@@ -222,20 +203,22 @@ select.form-input{cursor:pointer}
   </div>
 </div>
 
-<!-- Add Task Modal -->
+<!-- Add task modal -->
 <div class="modal-overlay" id="addtask-modal">
   <div class="modal">
     <button class="modal-close" onclick="closeModal('addtask-modal')">✕</button>
-    <div class="modal-title">Добавить задачу</div>
+    <div class="modal-title" id="addtask-title">Добавить задачу</div>
     <div class="form-row"><label class="form-label">Название задачи</label><input class="form-input" id="newtask-label" placeholder="Например: Погладить одежду"></div>
     <div class="form-row"><label class="form-label">Уточнение (необязательно)</label><input class="form-input" id="newtask-sub" placeholder="Например: ~20 мин"></div>
-    <div class="form-row"><label class="form-label">Периодичность</label>
+    <div class="form-row" id="newtask-freq-row"><label class="form-label">Периодичность</label>
       <select class="form-input" id="newtask-freq">
         <option value="daily">Каждый день</option>
-        <option value="3x_week">3 раза в неделю</option>
-        <option value="2x_week">2 раза в неделю</option>
+        <option value="mon-wed-fri">Пн, Ср, Пт</option>
+        <option value="tue-thu">Вт, Чт</option>
+        <option value="once">Разово (конкретная дата)</option>
       </select>
     </div>
+    <div class="form-row hidden" id="newtask-date-row"><label class="form-label">Дата</label><input class="form-input" type="date" id="newtask-date"></div>
     <div class="flex gap-8 mt-12">
       <button class="btn btn-secondary btn-sm" onclick="closeModal('addtask-modal')">Отмена</button>
       <button class="btn btn-primary btn-sm" onclick="saveNewTask()">Добавить</button>
@@ -243,63 +226,83 @@ select.form-input{cursor:pointer}
   </div>
 </div>
 
-<script>
-const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbzBKFRIvJiZyVgP8IlwRmFHbDJ4ZbRdAm9-QK0SkyCDqvAvkqpuDoV1wV8ovbSzfZjzkg/exec';
-const NANNY_PIN = '1111';
-const OWNER_PIN = '9999';
+<!-- Receipt modal -->
+<div class="modal-overlay" id="receipt-modal">
+  <div class="modal" style="max-width:540px">
+    <button class="modal-close" onclick="closeModal('receipt-modal')">✕</button>
+    <div class="modal-title">Расчётный листок</div>
+    <div class="receipt-box" id="receipt-text"></div>
+    <div class="flex gap-8 mt-16">
+      <button class="btn btn-secondary btn-sm" onclick="copyReceipt()">📋 Копировать</button>
+      <button class="btn btn-wa btn-sm" onclick="sendReceiptWA()">💬 WhatsApp</button>
+    </div>
+  </div>
+</div>
 
-const DEFAULT_TASKS = [
+<script>
+const SHEETS_URL='https://script.google.com/macros/s/AKfycbzBKFRIvJiZyVgP8IlwRmFHbDJ4ZbRdAm9-QK0SkyCDqvAvkqpuDoV1wV8ovbSzfZjzkg/exec';
+const NANNY_PIN='1111';
+const EMPLOYER_PIN='9999';
+
+const DEFAULT_TASKS=[
   {id:'prep_school',label:'Подготовка к школе',sub:'30–60 мин',freq:'daily'},
   {id:'feed_lunch',label:'Покормить ребёнка обедом',sub:'',freq:'daily'},
   {id:'walk',label:'Прогулка',sub:'60–120 мин, если хорошая погода',freq:'daily'},
   {id:'play',label:'Игра без ТВ и телефонов',sub:'40–90 мин (90+ если не было прогулки)',freq:'daily'},
   {id:'laundry',label:'Стирка: закинуть / развесить / снять и сложить',sub:'',freq:'daily'},
   {id:'dishes',label:'Помыть посуду / загрузить посудомойку',sub:'',freq:'daily'},
-  {id:'floors',label:'Протереть полы',sub:'3 раза в неделю',freq:'3x_week'},
-  {id:'cooking',label:'Приготовить обед на 2 дня',sub:'2 раза в неделю',freq:'2x_week'},
+  {id:'floors',label:'Протереть полы',sub:'Пн, Ср, Пт',freq:'mon-wed-fri'},
+  {id:'cooking',label:'Приготовить обед на 2 дня',sub:'Вт, Чт',freq:'tue-thu'},
 ];
 
-const DEFAULT_CFG = {
-  shiftBase: 7500,
-  deductPerTask: 2000,
-  monthlyRate: 160000,
-  workDays: 31,
-  hoursPerDay: 8,
-  overtimeStartHour: 19,
-};
+const DEFAULT_CFG={shiftBase:7500,deductPerTask:2000,hourlyRate:1000,overtimeStartHour:19};
 
-let currentRole = 'nanny';
-let pinBuffer = '';
-let pendingCommentTaskId = null;
-let pendingCommentDate = null;
-let clockInterval = null;
-let activeShiftDate = null;
+// day schedule
+const DOW_NAMES=['вс','пн','вт','ср','чт','пт','сб'];
+function dowOfDate(dateStr){ return new Date(dateStr+'T12:00:00').getDay(); }
+function taskActiveOnDate(task,dateStr){
+  const dow=dowOfDate(dateStr);
+  if(task.freq==='daily') return true;
+  if(task.freq==='mon-wed-fri') return [1,3,5].includes(dow);
+  if(task.freq==='tue-thu') return [2,4].includes(dow);
+  if(task.freq==='once') return task.onceDate===dateStr;
+  return true;
+}
 
-// ─── HELPERS ─────────────────────────────────────────────────────────────────
+let currentRole='nanny';
+let pinBuffer='';
+let pendingCommentTaskId=null;
+let pendingCommentDate=null;
+let clockInterval=null;
+let activeShiftDate=null;
+let receiptText='';
+
 function today(){ return new Date().toISOString().slice(0,10); }
-function nowTime(){ const d=new Date(); return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0'); }
+function nowTime(){ const d=new Date(); return pad(d.getHours())+':'+pad(d.getMinutes()); }
+function pad(n){ return String(n).padStart(2,'0'); }
 function load(k,def){ try{return JSON.parse(localStorage.getItem(k)||'null')||def;}catch{return def;} }
 function save(k,v){ localStorage.setItem(k,JSON.stringify(v)); }
-function getTasks(){ return load('tasks', DEFAULT_TASKS); }
+function getTasks(){ return load('tasks',DEFAULT_TASKS); }
 function getCfg(){ return {...DEFAULT_CFG,...load('cfg',{})}; }
-function hourlyRate(cfg){ return Math.round(cfg.monthlyRate/cfg.workDays/cfg.hoursPerDay); }
-
-function getShift(date){ const s=load('shifts',{}); return s[date]||null; }
+function getShift(date){ return (load('shifts',{}))[date]||null; }
 function saveShift(date,shift){ const s=load('shifts',{}); s[date]=shift; save('shifts',s); }
 function getOrCreate(date){
   let s=getShift(date);
   if(!s){
-    const dow=new Date(date).getDay();
-    const isWe=(dow===0||dow===6);
-    s={date,clockIn:null,clockOut:null,tasks:{},comments:{},overtime:false,weekendMode:isWe,salary:0,edited:false,bonus:0};
+    const dow=dowOfDate(date);
+    s={date,clockIn:null,clockOut:null,tasks:{},comments:{},overtime:false,weekendMode:(dow===0||dow===6),salary:0,edited:false,editedAt:null,bonus:0};
     saveShift(date,s);
   }
   return s;
 }
+function fmtDate(d){ return new Date(d+'T12:00:00').toLocaleDateString('ru-RU',{day:'numeric',month:'short',weekday:'short'}); }
+function fmtMoney(n){ return Number(n||0).toLocaleString('ru-RU')+'₸'; }
+function toMins(t){ if(!t) return 0; const[h,m]=t.split(':').map(Number); return h*60+m; }
 
 function calcSalary(shift){
   const cfg=getCfg();
-  const hr=hourlyRate(cfg);
+  const hr=cfg.hourlyRate;
+  const date=shift.date||today();
   if(shift.weekendMode){
     if(!shift.clockIn) return {base:0,deduct:0,deductCount:0,overtimePay:0,bonus:shift.bonus||0,total:shift.bonus||0};
     const inM=toMins(shift.clockIn);
@@ -309,35 +312,38 @@ function calcSalary(shift){
     const bonus=shift.bonus||0;
     return {base:0,deduct:0,deductCount:0,overtimePay:pay,bonus,total:pay+bonus};
   }
-  const tasks=getTasks();
+  const tasks=getTasks().filter(t=>taskActiveOnDate(t,date));
   let deductCount=0;
   tasks.forEach(t=>{ if(!shift.tasks[t.id]) deductCount++; });
-  const deduct=Math.min(deductCount*cfg.deductPerTask,cfg.shiftBase);
-  const base=cfg.shiftBase;
+  const cfg2=getCfg();
+  const deduct=Math.min(deductCount*cfg2.deductPerTask,cfg2.shiftBase);
+  const base=cfg2.shiftBase;
+  // overtime: auto-calculate if clockOut after overtimeStartHour
   let overtimePay=0;
-  if(shift.overtime){
-    const refTime=shift.clockOut||nowTime();
-    const outM=toMins(refTime);
-    const otMins=Math.max(0,outM-cfg.overtimeStartHour*60);
-    overtimePay=Math.round(otMins/60*hr);
+  if(shift.clockOut){
+    const outM=toMins(shift.clockOut);
+    const otStartM=cfg2.overtimeStartHour*60;
+    if(outM>otStartM){
+      const otMins=outM-otStartM;
+      overtimePay=Math.round(otMins/60*hr);
+    }
   }
   const bonus=shift.bonus||0;
   const total=Math.max(0,base-deduct)+overtimePay+bonus;
   return {base,deduct,deductCount,overtimePay,bonus,total};
 }
 
-function toMins(t){ const[h,m]=t.split(':').map(Number); return h*60+m; }
-function elapsed(from,to){ const m=toMins(to)-toMins(from); return `${Math.floor(m/60)}ч ${m%60}м`; }
-function checkAllDone(shift){ return getTasks().every(t=>shift.tasks[t.id]===true||shift.tasks[t.id]==='na'); }
-function fmtDate(d){ return new Date(d+'T12:00:00').toLocaleDateString('ru-RU',{day:'numeric',month:'short',weekday:'short'}); }
-function fmtMoney(n){ return Number(n).toLocaleString('ru-RU')+'₸'; }
+function checkAllDone(shift,date){
+  const d=date||shift.date||today();
+  return getTasks().filter(t=>taskActiveOnDate(t,d)).every(t=>shift.tasks[t.id]===true||shift.tasks[t.id]==='na');
+}
 
 // ─── PIN ─────────────────────────────────────────────────────────────────────
 function selectRole(r){
   currentRole=r; pinBuffer=''; updateDots();
   document.getElementById('pin-error').textContent='';
   document.querySelectorAll('.pin-role-tabs button').forEach((b,i)=>{
-    b.classList.toggle('active',(i===0&&r==='nanny')||(i===1&&r==='owner'));
+    b.classList.toggle('active',(i===0&&r==='nanny')||(i===1&&r==='employer'));
   });
 }
 function pinPress(d){ if(pinBuffer.length>=4)return; pinBuffer+=d; updateDots(); if(pinBuffer.length===4)setTimeout(checkPin,100); }
@@ -345,50 +351,45 @@ function pinBack(){ pinBuffer=pinBuffer.slice(0,-1); updateDots(); }
 function pinClear(){ pinBuffer=''; updateDots(); document.getElementById('pin-error').textContent=''; }
 function updateDots(){ for(let i=0;i<4;i++) document.getElementById('d'+i).classList.toggle('filled',i<pinBuffer.length); }
 function checkPin(){
-  const ok=(currentRole==='nanny'&&pinBuffer===NANNY_PIN)||(currentRole==='owner'&&pinBuffer===OWNER_PIN);
+  const ok=(currentRole==='nanny'&&pinBuffer===NANNY_PIN)||(currentRole==='employer'&&pinBuffer===EMPLOYER_PIN);
   if(ok) launchApp();
   else{ document.getElementById('pin-error').textContent='Неверный PIN'; pinBuffer=''; updateDots(); }
 }
 
-// ─── APP SHELL ────────────────────────────────────────────────────────────────
+// ─── APP ─────────────────────────────────────────────────────────────────────
 function launchApp(){
   document.getElementById('pin-screen').style.display='none';
-  const app=document.getElementById('app');
-  app.style.display='flex';
+  document.getElementById('app').style.display='flex';
   document.getElementById('today-date').textContent=new Date().toLocaleDateString('ru-RU',{weekday:'long',day:'numeric',month:'long'});
   const badge=document.getElementById('role-badge');
-  if(currentRole==='nanny'){ badge.innerHTML='<span class="status-dot"></span> Няня'; badge.className='status-badge work'; }
-  else{ badge.innerHTML='<span class="status-dot"></span> Хозяин'; badge.className='status-badge overtime'; }
+  badge.innerHTML=`<span class="status-dot"></span>${currentRole==='nanny'?'Няня':'Работодатель'}`;
+  badge.className='status-badge '+(currentRole==='nanny'?'work':'ot');
   activeShiftDate=today();
   buildTabs(); showTab('nanny');
 }
-
 function buildTabs(){
   const tabs=document.getElementById('tabs-row');
-  const list=currentRole==='owner'
+  const list=currentRole==='employer'
     ?[{id:'nanny',label:'Смена'},{id:'history',label:'История'},{id:'salary',label:'Зарплата'},{id:'settings',label:'Настройки'}]
     :[{id:'nanny',label:'Смена'},{id:'history',label:'История'}];
   tabs.innerHTML=list.map(t=>`<button class="tab-btn" id="tab-btn-${t.id}" onclick="showTab('${t.id}')">${t.label}</button>`).join('');
 }
-
 function showTab(id){
   ['nanny','history','salary','settings'].forEach(t=>{
-    const el=document.getElementById('tab-'+t); if(el) el.style.display=t===id?'block':'none';
-    const btn=document.getElementById('tab-btn-'+t); if(btn) btn.classList.toggle('active',t===id);
+    const e=document.getElementById('tab-'+t); if(e) e.style.display=t===id?'block':'none';
+    const b=document.getElementById('tab-btn-'+t); if(b) b.classList.toggle('active',t===id);
   });
   if(id==='nanny') renderNanny();
   if(id==='history') renderHistory();
   if(id==='salary') renderSalaryTab();
   if(id==='settings') renderSettings();
 }
-
 function logout(){
   if(clockInterval) clearInterval(clockInterval);
   document.getElementById('app').style.display='none';
   document.getElementById('pin-screen').style.display='flex';
   pinBuffer=''; updateDots(); document.getElementById('pin-error').textContent='';
 }
-
 function closeModal(id){ document.getElementById(id).classList.remove('open'); }
 
 // ─── NANNY TAB ────────────────────────────────────────────────────────────────
@@ -396,66 +397,53 @@ function renderNanny(){
   const el=document.getElementById('tab-nanny');
   el.innerHTML='';
   if(clockInterval) clearInterval(clockInterval);
+  const isEmployer=currentRole==='employer';
 
   // Date picker
   const pickerDiv=document.createElement('div');
-  pickerDiv.className='date-picker-row no-print';
+  pickerDiv.className='date-picker-row';
   const isToday=activeShiftDate===today();
-  pickerDiv.innerHTML=`
-    <label>📅 Дата смены:</label>
-    <input type="date" id="shift-date-picker" value="${activeShiftDate}" max="${today()}" onchange="changeShiftDate(this.value)">
-    ${!isToday?`<span class="badge badge-blue">Прошедшая дата</span>`:''}
-  `;
+  pickerDiv.innerHTML=`<label>📅 Дата:</label>
+    <input type="date" value="${activeShiftDate}" max="${today()}" onchange="changeShiftDate(this.value)">
+    ${!isToday?`<span class="badge badge-blue">Прошедшая дата</span>`:''}`;
   el.appendChild(pickerDiv);
 
   const shift=getOrCreate(activeShiftDate);
 
-  // Edited notice
   if(shift.edited){
     const n=document.createElement('div');
     n.className='edited-notice';
-    n.textContent='⚠ Эта запись была отредактирована'+(shift.editedAt?' ('+shift.editedAt+')':'');
+    n.textContent='✎ Запись отредактирована'+(shift.editedAt?' ('+shift.editedAt+')':'');
     el.appendChild(n);
   }
 
-  if(shift.weekendMode) renderWeekend(el,shift);
-  else renderWeekday(el,shift);
+  if(shift.weekendMode) renderWeekend(el,shift,isEmployer);
+  else renderWeekday(el,shift,isEmployer);
 }
 
 function changeShiftDate(val){
   activeShiftDate=val;
-  // mark as edited if not today
   if(val!==today()){
-    const shift=getOrCreate(val);
-    if(!shift.edited){ shift.edited=true; shift.editedAt=new Date().toLocaleString('ru-RU'); saveShift(val,shift); }
+    const s=getOrCreate(val);
+    if(!s.edited){ s.edited=true; s.editedAt=new Date().toLocaleString('ru-RU'); saveShift(val,s); }
   }
   renderNanny();
 }
 
-function renderWeekend(el,shift){
-  const notice=document.createElement('div');
-  notice.className='weekend-notice';
+function renderWeekend(el,shift,readonly){
   const cfg=getCfg();
-  notice.innerHTML=`<strong>Выходной день</strong> — Начисление почасовое с момента прихода (~${hourlyRate(cfg)} ₸/час).`;
-  el.appendChild(notice);
-
-  const card=document.createElement('div');
-  card.className='card';
-  card.innerHTML='<div class="card-title">Время работы</div>';
-
+  el.appendChild(mkEl('div','weekend-notice',`<strong>Выходной день</strong> — начисление почасовое с момента прихода (~${cfg.hourlyRate} ₸/час).`));
+  const card=mkCard('Время работы');
   if(!shift.clockIn){
-    card.innerHTML+=`<button class="btn btn-primary" onclick="clockIn()">▶ Отметить приход</button>`;
+    if(!readonly) card.innerHTML+=`<button class="btn btn-primary" onclick="clockIn()">▶ Отметить приход</button>`;
+    else card.innerHTML+=`<div class="text-muted text-sm">Смена не начата</div>`;
   } else {
-    card.innerHTML+=`
-      <div class="flex items-center justify-between mb-8">
-        <div><div style="font-size:0.75rem;color:var(--text3)">Приход</div><div class="text-mono" style="font-size:1.4rem">${shift.clockIn}</div></div>
-        ${shift.clockOut
-          ?`<div><div style="font-size:0.75rem;color:var(--text3)">Уход</div><div class="text-mono" style="font-size:1.4rem">${shift.clockOut}</div></div>`
-          :`<div id="live-clock" class="time-display" style="font-size:1.8rem">--:--</div>`}
-      </div>`;
-    if(!shift.clockOut){
-      card.innerHTML+=`<button class="btn btn-danger mt-12" onclick="clockOut()">■ Отметить уход</button>`;
-    } else {
+    card.innerHTML+=`<div class="flex items-center justify-between mb-8">
+      <div><div style="font-size:0.75rem;color:var(--text3)">Приход</div><div class="text-mono" style="font-size:1.4rem">${shift.clockIn}</div></div>
+      ${shift.clockOut?`<div><div style="font-size:0.75rem;color:var(--text3)">Уход</div><div class="text-mono" style="font-size:1.4rem">${shift.clockOut}</div></div>`:`<div id="live-clock" style="font-family:'JetBrains Mono',monospace;font-size:1.8rem">--:--</div>`}
+    </div>`;
+    if(!shift.clockOut&&!readonly) card.innerHTML+=`<button class="btn btn-danger mt-12" onclick="tryClockOut()">■ Отметить уход</button>`;
+    else if(shift.clockOut){
       const {total}=calcSalary(shift);
       card.innerHTML+=`<div class="salary-total mt-12"><span class="salary-total-label">Начислено за смену</span><span class="salary-total-value">${fmtMoney(total)}</span></div>`;
     }
@@ -464,103 +452,78 @@ function renderWeekend(el,shift){
   startClock();
 }
 
-function renderWeekday(el,shift){
-  const isViewOnly=currentRole==='owner';
+function renderWeekday(el,shift,readonly){
+  const cfg=getCfg();
+  const date=activeShiftDate;
+  const activeTasks=getTasks().filter(t=>taskActiveOnDate(t,date));
+  const allDone=activeTasks.every(t=>shift.tasks[t.id]===true||shift.tasks[t.id]==='na');
 
   // Clock card
-  const cc=document.createElement('div');
-  cc.className='card';
+  const cc=mkCard(`Смена ${date}`);
   if(!shift.clockIn){
-    cc.innerHTML=`<div class="card-title">Начало смены</div>
-      ${isViewOnly
-        ?`<div class="text-muted text-sm">Смена ещё не начата</div>`
-        :`<button class="btn btn-primary" onclick="clockIn()">▶ Отметить приход</button>`}`;
+    if(!readonly) cc.innerHTML+=`<button class="btn btn-primary" onclick="clockIn()">▶ Отметить приход</button>`;
+    else cc.innerHTML+=`<div class="text-muted text-sm">Смена не начата</div>`;
   } else {
-    const allDone=checkAllDone(shift);
-    cc.innerHTML=`
-      <div class="card-title">Смена ${activeShiftDate}</div>
-      <div class="flex items-center justify-between mb-8">
-        <div><div style="font-size:0.75rem;color:var(--text3)">Приход</div><div class="text-mono" style="font-size:1.4rem">${shift.clockIn}</div></div>
-        ${shift.clockOut
-          ?`<div><div style="font-size:0.75rem;color:var(--text3)">Уход</div><div class="text-mono" style="font-size:1.4rem">${shift.clockOut}</div></div>`
-          :`<div id="live-clock" class="time-display" style="font-size:1.8rem">--:--</div>`}
-      </div>
-      <div class="flex items-center justify-between mt-12">
-        <span class="status-badge ${shift.clockOut?'off':allDone?'work':'off'}">
-          <span class="status-dot"></span>
-          ${shift.clockOut?'Смена закрыта':allDone?'Чек-лист выполнен':'На смене'}
-        </span>
-        ${!shift.clockOut&&!isViewOnly?`<button class="btn btn-danger btn-sm" onclick="clockOut()">■ Уйти</button>`:''}
-      </div>`;
+    const otInfo=shift.clockOut&&toMins(shift.clockOut)>cfg.overtimeStartHour*60
+      ?`<span class="status-badge ot"><span class="status-dot"></span>Переработка с ${cfg.overtimeStartHour}:00</span>`:
+      allDone?`<span class="status-badge work"><span class="status-dot"></span>Чек-лист выполнен`:`<span class="status-badge off"><span class="status-dot"></span>На смене</span>`;
+    cc.innerHTML+=`<div class="flex items-center justify-between mb-8">
+      <div><div style="font-size:0.75rem;color:var(--text3)">Приход</div><div class="text-mono" style="font-size:1.4rem">${shift.clockIn}</div></div>
+      ${shift.clockOut?`<div><div style="font-size:0.75rem;color:var(--text3)">Уход</div><div class="text-mono" style="font-size:1.4rem">${shift.clockOut}</div></div>`:`<div id="live-clock" style="font-family:'JetBrains Mono',monospace;font-size:1.8rem">--:--</div>`}
+    </div>
+    <div class="flex items-center justify-between mt-12">
+      ${otInfo}
+      ${!shift.clockOut&&!readonly?`<button class="btn btn-danger btn-sm" onclick="tryClockOut()">■ Уйти</button>`:''}
+    </div>`;
   }
   el.appendChild(cc);
 
   if(!shift.clockIn) return;
 
   // Checklist
-  const clCard=document.createElement('div');
-  clCard.className='card';
-  clCard.innerHTML='<div class="card-title">Чек-лист</div>';
-  const taskList=document.createElement('div');
-  getTasks().forEach(task=>taskList.appendChild(buildTaskItem(task,shift,isViewOnly)));
-  clCard.appendChild(taskList);
+  const clCard=mkCard('Чек-лист');
+  const dow=dowOfDate(date);
+  const dowName=DOW_NAMES[dow];
+  clCard.innerHTML=`<div class="card-title">Чек-лист — ${fmtDate(date)}</div>`;
+  activeTasks.forEach(task=>{
+    clCard.appendChild(buildTaskItem(task,shift,readonly||!!shift.clockOut));
+  });
   el.appendChild(clCard);
 
-  // Overtime toggle
-  const allDone=checkAllDone(shift);
-  if((allDone||isViewOnly)&&!shift.clockOut){
-    const otCard=document.createElement('div');
-    otCard.className='overtime-card';
-    const cfg=getCfg();
-    otCard.innerHTML=`
-      <div class="toggle-row">
-        <div>
-          <div style="font-weight:500;font-size:0.9rem">Переработка по просьбе</div>
-          <div class="text-sm text-muted mt-8">Начисление с ${cfg.overtimeStartHour}:00 (~${hourlyRate(cfg)} ₸/час)</div>
-        </div>
-        <label class="toggle"><input type="checkbox" id="ot-toggle" ${shift.overtime?'checked':''} ${isViewOnly?'disabled':''} onchange="toggleOvertime(this.checked)"><span class="toggle-slider"></span></label>
-      </div>`;
-    el.appendChild(otCard);
-  }
-
-  // Done message
-  if(allDone&&!shift.clockOut&&!isViewOnly){
+  // Done screen
+  if(allDone&&!shift.clockOut&&!readonly){
     const msg=document.createElement('div');
-    msg.className='done-screen';
-    msg.innerHTML=`<div style="font-size:3rem">🎉</div><div style="font-size:1.4rem;font-weight:600;color:var(--green)">Чек-лист выполнен!</div><div class="text-muted" style="font-size:0.9rem">Рабочий день окончен — можно идти домой!<br>Или отметьте переработку, если остаётесь.</div>`;
+    msg.style.cssText='display:flex;flex-direction:column;align-items:center;gap:16px;padding:32px 20px;text-align:center';
+    msg.innerHTML=`<div style="font-size:3rem">🎉</div><div style="font-size:1.4rem;font-weight:600;color:var(--green)">Чек-лист выполнен!</div><div class="text-muted" style="font-size:0.9rem">Рабочий день окончен — можно идти домой!<br><span style="font-size:0.8rem;color:var(--text3)">Если остаётесь — уход после 19:00 засчитается как переработка автоматически.</span></div>`;
     el.appendChild(msg);
   }
 
-  // Salary preview
-  const salCard=document.createElement('div');
-  salCard.className='card';
+  // Salary card
+  const salCard=mkCard('');
+  salCard.id='sal-card';
   renderSalaryCard(salCard,shift);
   el.appendChild(salCard);
 
   startClock();
 }
 
-function buildTaskItem(task,shift,readonly){
+function buildTaskItem(task,shift,locked){
   const wrapper=document.createElement('div');
   wrapper.className='checklist-item';
   const state=shift.tasks[task.id];
   const comment=shift.comments[task.id]||'';
-  const isChecked=state===true;
-  const isNA=state==='na';
-  const locked=!!shift.clockOut||readonly;
-
+  const isChecked=state===true,isNA=state==='na';
   wrapper.innerHTML=`
     <div class="check-box ${isChecked?'checked':isNA?'na':''}" onclick="${locked?'':'toggleTask(\''+task.id+'\')'}"></div>
     <div style="flex:1">
       <div class="check-label ${isChecked?'done':''}" onclick="${locked?'':'toggleTask(\''+task.id+'\')'}">${task.label}
-        ${task.freq!=='daily'?`<span class="badge badge-blue" style="margin-left:6px">${task.freq==='3x_week'?'3×/нед':'2×/нед'}</span>`:''}
+        ${task.freq==='once'?`<span class="one-time-badge">разово</span>`:''}
       </div>
       ${task.sub?`<div class="check-freq">${task.sub}</div>`:''}
       ${isNA&&comment?`<div style="font-size:0.78rem;color:var(--text2);margin-top:4px;background:var(--surface2);padding:6px 10px;border-radius:6px">📝 ${comment}</div>`:''}
       ${isNA&&!comment&&!locked?`<div style="color:var(--red);font-size:0.72rem;margin-top:4px">⚠ Введите причину (без вычета)</div>`:''}
     </div>
-    ${!locked&&isNA?`<button class="btn btn-ghost btn-sm" onclick="openCommentModal('${task.id}')">💬</button>`:''}
-  `;
+    ${!locked&&isNA?`<button class="btn btn-ghost btn-sm" onclick="openCommentModal('${task.id}')">💬</button>`:''}`;
   return wrapper;
 }
 
@@ -576,8 +539,7 @@ function toggleTask(taskId){
 }
 
 function openCommentModal(taskId){
-  pendingCommentTaskId=taskId;
-  pendingCommentDate=activeShiftDate;
+  pendingCommentTaskId=taskId; pendingCommentDate=activeShiftDate;
   document.getElementById('modal-comment-text').value=getOrCreate(activeShiftDate).comments[taskId]||'';
   document.getElementById('modal-comment-err').style.display='none';
   document.getElementById('comment-modal').classList.add('open');
@@ -595,8 +557,7 @@ function saveComment(){
 function renderSalaryCard(el,shift){
   const {base,deduct,deductCount,overtimePay,bonus,total}=calcSalary(shift);
   const cfg=getCfg();
-  el.innerHTML=`
-    <div class="card-title">Расчёт за смену</div>
+  el.innerHTML=`<div class="card-title">Расчёт за смену</div>
     <div class="salary-grid mb-8">
       <div class="salary-item"><div class="salary-item-label">База</div><div class="salary-item-value">${fmtMoney(base)}</div></div>
       <div class="salary-item"><div class="salary-item-label">Вычеты (${deductCount}×${fmtMoney(cfg.deductPerTask)})</div><div class="salary-item-value" style="color:${deduct>0?'var(--red)':'var(--text)'}">${deduct>0?'−'+fmtMoney(deduct):'—'}</div></div>
@@ -612,7 +573,32 @@ function clockIn(){
   saveShift(activeShiftDate,shift);
   renderNanny();
 }
-function clockOut(){
+
+function tryClockOut(){
+  const shift=getOrCreate(activeShiftDate);
+  const date=activeShiftDate;
+  if(!shift.weekendMode){
+    const activeTasks=getTasks().filter(t=>taskActiveOnDate(t,date));
+    const unfinished=activeTasks.filter(t=>!shift.tasks[t.id]);
+    if(unfinished.length>0){
+      // show confirm with deduct info
+      const cfg=getCfg();
+      const deductCount=unfinished.length;
+      const deductAmt=Math.min(deductCount*cfg.deductPerTask,cfg.shiftBase);
+      let body=`<div class="warn-notice">Есть невыполненные пункты без причины — будет применён вычет.</div>`;
+      body+=`<div style="font-size:0.85rem;margin-bottom:12px">Невыполненные задачи:</div><ul style="font-size:0.85rem;color:var(--text2);padding-left:20px;line-height:2">`;
+      unfinished.forEach(t=>{ body+=`<li>${t.label}</li>`; });
+      body+=`</ul><div class="salary-total mt-12"><span class="salary-total-label">Вычет</span><span style="font-family:'JetBrains Mono',monospace;font-size:1.4rem;color:var(--red)">−${fmtMoney(deductAmt)}</span></div>`;
+      document.getElementById('close-confirm-body').innerHTML=body;
+      document.getElementById('close-confirm-modal').classList.add('open');
+      return;
+    }
+  }
+  confirmClockOut();
+}
+
+function confirmClockOut(){
+  closeModal('close-confirm-modal');
   const shift=getOrCreate(activeShiftDate);
   shift.clockOut=nowTime();
   const {total}=calcSalary(shift);
@@ -621,15 +607,10 @@ function clockOut(){
   syncToSheets(shift);
   renderNanny();
 }
-function toggleOvertime(val){
-  const shift=getOrCreate(activeShiftDate);
-  shift.overtime=val;
-  saveShift(activeShiftDate,shift);
-  renderNanny();
-}
+
 function startClock(){
   if(clockInterval) clearInterval(clockInterval);
-  function tick(){ const el=document.getElementById('live-clock'); if(el) el.textContent=nowTime(); }
+  function tick(){ const e=document.getElementById('live-clock'); if(e) e.textContent=nowTime(); }
   tick(); clockInterval=setInterval(tick,10000);
 }
 
@@ -637,30 +618,25 @@ function startClock(){
 function renderHistory(){
   const el=document.getElementById('tab-history');
   const shifts=load('shifts',{});
-  // Only show dates with actual clock-in
   const dates=Object.keys(shifts).filter(d=>shifts[d].clockIn).sort().reverse();
-
   let html=`<div class="card"><div class="card-title">История смен</div>`;
   if(!dates.length){
     html+=`<div class="text-muted text-sm" style="padding:20px 0;text-align:center">Нет данных</div>`;
   } else {
-    html+=`<table class="hist-table"><thead><tr>
-      <th>Дата</th><th>Приход</th><th>Уход</th><th>Тип</th><th>Вычеты</th><th>Итого</th>
-      ${currentRole==='owner'?'<th></th>':''}
-    </tr></thead><tbody>`;
+    html+=`<table class="hist-table"><thead><tr><th>Дата</th><th>Приход</th><th>Уход</th><th>Тип</th><th>Вычеты</th><th>Итого</th>${currentRole==='employer'?'<th></th>':''}</tr></thead><tbody>`;
     dates.forEach(d=>{
       const s=shifts[d];
       const {deduct,total}=calcSalary(s);
-      const badge=s.weekendMode?'<span class="badge badge-blue">Выходной</span>':s.overtime?'<span class="badge badge-amber">Переработка</span>':'<span class="badge badge-green">Будни</span>';
-      const editedMark=s.edited?'<span class="badge badge-gray" style="margin-left:4px" title="Отредактировано">✎</span>':'';
+      const badge=s.weekendMode?'<span class="badge badge-blue">Выходной</span>':toMins(s.clockOut)>getCfg().overtimeStartHour*60?'<span class="badge badge-amber">Переработка</span>':'<span class="badge badge-green">Будни</span>';
+      const edt=s.edited?'<span class="badge badge-gray" style="margin-left:4px">✎</span>':'';
       html+=`<tr>
-        <td>${fmtDate(d)}${editedMark}</td>
+        <td>${fmtDate(d)}${edt}</td>
         <td>${s.clockIn||'—'}</td>
-        <td>${s.clockOut||'<span class="text-muted">в процессе</span>'}</td>
+        <td>${s.clockOut||'<span style="color:var(--text3)">в процессе</span>'}</td>
         <td>${badge}</td>
         <td style="color:${deduct>0?'var(--red)':'var(--text2)'}">${deduct>0?'−'+fmtMoney(deduct):'—'}</td>
         <td class="text-mono" style="font-weight:500">${s.clockOut?fmtMoney(total):'—'}</td>
-        ${currentRole==='owner'?`<td><button class="btn btn-ghost btn-sm" onclick="openEditModal('${d}')">✎ Изм.</button></td>`:''}
+        ${currentRole==='employer'?`<td><button class="btn btn-ghost btn-sm" onclick="openEditModal('${d}')">✎</button></td>`:''}
       </tr>`;
     });
     html+=`</tbody></table>`;
@@ -673,56 +649,35 @@ function renderHistory(){
 function openEditModal(date){
   const shift=getOrCreate(date);
   document.getElementById('edit-modal-title').textContent='Редактировать: '+fmtDate(date);
-  const body=document.getElementById('edit-modal-body');
-  const tasks=getTasks();
-
+  const tasks=getTasks().filter(t=>taskActiveOnDate(t,date));
   let tasksHtml='';
   if(!shift.weekendMode){
-    tasksHtml=`<div style="margin-top:16px"><div class="card-title">Задачи</div>`;
+    tasksHtml=`<div style="margin-top:14px"><div class="card-title">Задачи</div>`;
     tasks.forEach(t=>{
       const state=shift.tasks[t.id];
       const comment=shift.comments[t.id]||'';
-      tasksHtml+=`
-        <div class="checklist-item" style="gap:10px">
-          <select style="background:var(--surface2);border:0.5px solid var(--border2);border-radius:6px;color:var(--text);padding:4px 8px;font-family:'Geologica',sans-serif;font-size:0.8rem;outline:none" id="etask-${t.id}" onchange="editTaskState('${date}','${t.id}',this.value)">
-            <option value="" ${!state?'selected':''}>Не отмечено (вычет)</option>
-            <option value="true" ${state===true?'selected':''}>✓ Выполнено</option>
-            <option value="na" ${state==='na'?'selected':''}>— Не выполнено (с причиной)</option>
-          </select>
-          <span style="font-size:0.85rem;flex:1">${t.label}</span>
-        </div>
-        ${state==='na'?`<div style="padding:0 0 8px 0"><input class="form-input" style="font-size:0.8rem;padding:6px 10px" placeholder="Причина..." value="${comment}" onchange="editTaskComment('${date}','${t.id}',this.value)"></div>`:''}`;
+      tasksHtml+=`<div class="task-edit-item">
+        <select style="background:var(--surface2);border:0.5px solid var(--border2);border-radius:6px;color:var(--text);padding:4px 8px;font-size:0.8rem;outline:none" onchange="editTaskState('${date}','${t.id}',this.value)">
+          <option value="" ${!state?'selected':''}>Не выполнено (вычет)</option>
+          <option value="true" ${state===true?'selected':''}>✓ Выполнено</option>
+          <option value="na" ${state==='na'?'selected':''}>— Без вычета (с причиной)</option>
+        </select>
+        <span style="font-size:0.85rem;flex:1">${t.label}</span>
+      </div>
+      ${state==='na'?`<div style="padding:0 0 8px 10px"><input class="form-input" style="font-size:0.8rem;padding:6px 10px" placeholder="Причина..." value="${comment}" onchange="editTaskComment('${date}','${t.id}',this.value)"></div>`:''}`
     });
     tasksHtml+=`</div>`;
   }
-
-  body.innerHTML=`
-    <div class="form-row">
-      <label class="form-label">Приход</label>
-      <input class="form-input" type="time" id="edit-clockin" value="${shift.clockIn||''}" onchange="editField('${date}','clockIn',this.value)">
-    </div>
-    <div class="form-row">
-      <label class="form-label">Уход</label>
-      <input class="form-input" type="time" id="edit-clockout" value="${shift.clockOut||''}" onchange="editField('${date}','clockOut',this.value)">
-    </div>
-    <div class="form-row">
-      <label class="form-label">Тип дня</label>
+  document.getElementById('edit-modal-body').innerHTML=`
+    <div class="form-row"><label class="form-label">Приход</label><input class="form-input" type="time" value="${shift.clockIn||''}" onchange="editField('${date}','clockIn',this.value)"></div>
+    <div class="form-row"><label class="form-label">Уход</label><input class="form-input" type="time" value="${shift.clockOut||''}" onchange="editField('${date}','clockOut',this.value)"></div>
+    <div class="form-row"><label class="form-label">Тип дня</label>
       <select class="form-input" onchange="editField('${date}','weekendMode',this.value==='true')">
         <option value="false" ${!shift.weekendMode?'selected':''}>Будни</option>
         <option value="true" ${shift.weekendMode?'selected':''}>Выходной</option>
       </select>
     </div>
-    <div class="form-row">
-      <label class="form-label">Переработка</label>
-      <select class="form-input" onchange="editField('${date}','overtime',this.value==='true')">
-        <option value="false" ${!shift.overtime?'selected':''}>Нет</option>
-        <option value="true" ${shift.overtime?'selected':''}>Да</option>
-      </select>
-    </div>
-    <div class="form-row">
-      <label class="form-label">Премия (₸)</label>
-      <input class="form-input" type="number" min="0" value="${shift.bonus||0}" onchange="editField('${date}','bonus',Number(this.value))">
-    </div>
+    <div class="form-row"><label class="form-label">Премия (₸)</label><input class="form-input" type="number" min="0" value="${shift.bonus||0}" onchange="editField('${date}','bonus',Number(this.value))"></div>
     ${tasksHtml}
     <div class="flex gap-8 mt-16">
       <button class="btn btn-secondary btn-sm" onclick="closeModal('edit-modal')">Закрыть</button>
@@ -730,36 +685,26 @@ function openEditModal(date){
     </div>`;
   document.getElementById('edit-modal').classList.add('open');
 }
-
 function editField(date,field,val){
-  const shift=getOrCreate(date);
-  shift[field]=val;
-  shift.edited=true;
-  shift.editedAt=new Date().toLocaleString('ru-RU');
-  saveShift(date,shift);
+  const s=getOrCreate(date); s[field]=val; s.edited=true; s.editedAt=new Date().toLocaleString('ru-RU');
+  saveShift(date,s);
 }
 function editTaskState(date,taskId,val){
-  const shift=getOrCreate(date);
-  if(val==='') delete shift.tasks[taskId];
-  else if(val==='true') shift.tasks[taskId]=true;
-  else shift.tasks[taskId]='na';
-  shift.edited=true; shift.editedAt=new Date().toLocaleString('ru-RU');
-  saveShift(date,shift);
-  openEditModal(date);
+  const s=getOrCreate(date);
+  if(val==='') delete s.tasks[taskId];
+  else if(val==='true') s.tasks[taskId]=true;
+  else s.tasks[taskId]='na';
+  s.edited=true; s.editedAt=new Date().toLocaleString('ru-RU');
+  saveShift(date,s); openEditModal(date);
 }
 function editTaskComment(date,taskId,val){
-  const shift=getOrCreate(date);
-  shift.comments[taskId]=val;
-  saveShift(date,shift);
+  const s=getOrCreate(date); s.comments[taskId]=val; saveShift(date,s);
 }
 function finalizeEdit(date){
-  const shift=getOrCreate(date);
-  const {total}=calcSalary(shift);
-  shift.salary=total;
-  saveShift(date,shift);
-  syncToSheets(shift);
-  closeModal('edit-modal');
-  renderHistory();
+  const s=getOrCreate(date);
+  const {total}=calcSalary(s); s.salary=total;
+  saveShift(date,s); syncToSheets(s);
+  closeModal('edit-modal'); renderHistory();
 }
 
 // ─── SALARY TAB ───────────────────────────────────────────────────────────────
@@ -767,99 +712,139 @@ function renderSalaryTab(){
   const el=document.getElementById('tab-salary');
   const shifts=load('shifts',{});
   const now=new Date();
-  const ym=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-
-  // Month filter
-  const months=[...new Set(Object.keys(shifts).map(d=>d.slice(0,7)))].sort().reverse();
-  const selectedMonth=load('selectedMonth',ym);
-
-  const filtered=Object.values(shifts).filter(s=>s.date&&s.date.startsWith(selectedMonth)&&s.clockIn);
-
-  let weekdayCount=0,weekendCount=0,overtimeCount=0,totalBase=0,totalDeduct=0,totalOT=0,totalBonus=0,totalAll=0;
+  const curYM=`${now.getFullYear()}-${pad(now.getMonth()+1)}`;
+  const months=[...new Set(Object.keys(shifts).filter(d=>shifts[d].clockIn).map(d=>d.slice(0,7)))].sort().reverse();
+  if(!months.length){ el.innerHTML=`<div class="card"><div class="text-muted text-sm" style="padding:20px 0;text-align:center">Нет данных</div></div>`; return; }
+  const selMonth=load('selMonth',curYM);
+  const filtered=Object.values(shifts).filter(s=>s.date&&s.date.startsWith(selMonth)&&s.clockIn&&s.clockOut);
+  let wdCount=0,weCount=0,otCount=0,totBase=0,totDeduct=0,totOT=0,totBonus=0,totAll=0;
   filtered.forEach(s=>{
-    const {base,deduct,overtimePay,bonus,total}=calcSalary(s);
-    if(s.weekendMode) weekendCount++;
-    else weekdayCount++;
-    if(s.overtime&&!s.weekendMode) overtimeCount++;
-    totalBase+=base; totalDeduct+=deduct; totalOT+=overtimePay; totalBonus+=bonus; totalAll+=total;
+    const r=calcSalary(s);
+    if(s.weekendMode) weCount++; else wdCount++;
+    if(r.overtimePay>0) otCount++;
+    totBase+=r.base; totDeduct+=r.deduct; totOT+=r.overtimePay; totBonus+=r.bonus; totAll+=r.total;
   });
-
-  // Bonus for month
-  const monthBonus=load('monthBonus',{});
-  const mb=monthBonus[selectedMonth]||0;
-  const grandTotal=totalAll+mb;
+  const mb=load('monthBonus',{})[selMonth]||0;
+  const grand=totAll+mb;
 
   let html=`
-    <div class="print-header"><h2>Расчётный листок</h2><p>Период: ${selectedMonth} | Сформировано: ${new Date().toLocaleDateString('ru-RU')}</p></div>
-    <div class="card no-print">
+    <div class="card">
       <div class="card-title">Период</div>
-      <div class="flex items-center gap-12">
-        <select class="form-input" style="width:180px" onchange="saveSelectedMonth(this.value)">
-          ${months.map(m=>`<option value="${m}" ${m===selectedMonth?'selected':''}>${m}</option>`).join('')}
-        </select>
+      <select class="form-input" style="width:200px" onchange="saveSelMonth(this.value)">
+        ${months.map(m=>`<option value="${m}" ${m===selMonth?'selected':''}>${m}</option>`).join('')}
+      </select>
+    </div>
+    <div class="card">
+      <div class="card-title">Сводка</div>
+      <div class="salary-grid mb-16">
+        <div class="salary-item"><div class="salary-item-label">Будних смен</div><div class="salary-item-value">${wdCount}</div></div>
+        <div class="salary-item"><div class="salary-item-label">Выходных смен</div><div class="salary-item-value">${weCount}</div></div>
+        <div class="salary-item"><div class="salary-item-label">С переработкой</div><div class="salary-item-value">${otCount}</div></div>
+        <div class="salary-item"><div class="salary-item-label">Всего смен</div><div class="salary-item-value">${filtered.length}</div></div>
+      </div>
+      <div class="salary-grid">
+        <div class="salary-item"><div class="salary-item-label">База (будни)</div><div class="salary-item-value">${fmtMoney(totBase)}</div></div>
+        <div class="salary-item"><div class="salary-item-label">Вычеты</div><div class="salary-item-value" style="color:${totDeduct>0?'var(--red)':'var(--text)'}">${totDeduct>0?'−'+fmtMoney(totDeduct):'—'}</div></div>
+        <div class="salary-item"><div class="salary-item-label">Переработка</div><div class="salary-item-value" style="color:${totOT>0?'var(--accent)':'var(--text)'}">${totOT>0?'+'+fmtMoney(totOT):'—'}</div></div>
+        <div class="salary-item"><div class="salary-item-label">Премии</div><div class="salary-item-value" style="color:${totBonus>0?'var(--green)':'var(--text)'}">${totBonus>0?'+'+fmtMoney(totBonus):'—'}</div></div>
       </div>
     </div>
     <div class="card">
-      <div class="card-title">Сводка за период</div>
-      <div class="salary-grid mb-16">
-        <div class="salary-item"><div class="salary-item-label">Будних смен</div><div class="salary-item-value">${weekdayCount}</div></div>
-        <div class="salary-item"><div class="salary-item-label">Выходных смен</div><div class="salary-item-value">${weekendCount}</div></div>
-        <div class="salary-item"><div class="salary-item-label">Переработок</div><div class="salary-item-value">${overtimeCount}</div></div>
-        <div class="salary-item"><div class="salary-item-label">Всего смен</div><div class="salary-item-value">${filtered.length}</div></div>
-      </div>
-      <div class="salary-grid mb-8">
-        <div class="salary-item"><div class="salary-item-label">База (будни)</div><div class="salary-item-value">${fmtMoney(totalBase)}</div></div>
-        <div class="salary-item"><div class="salary-item-label">Вычеты</div><div class="salary-item-value" style="color:${totalDeduct>0?'var(--red)':'var(--text)'}">${totalDeduct>0?'−'+fmtMoney(totalDeduct):'—'}</div></div>
-        <div class="salary-item"><div class="salary-item-label">Переработка</div><div class="salary-item-value" style="color:${totalOT>0?'var(--accent)':'var(--text)'}">${totalOT>0?'+'+fmtMoney(totalOT):'—'}</div></div>
-        <div class="salary-item"><div class="salary-item-label">Премии (смены)</div><div class="salary-item-value" style="color:${totalBonus>0?'var(--green)':'var(--text)'}">${totalBonus>0?'+'+fmtMoney(totalBonus):'—'}</div></div>
-      </div>
-    </div>
-    <div class="card no-print">
       <div class="card-title">Разовая премия за месяц</div>
       <div class="flex items-center gap-12">
-        <input class="form-input" type="number" min="0" style="width:180px" value="${mb}" placeholder="0" id="month-bonus-input" onchange="saveMonthBonus('${selectedMonth}',Number(this.value))">
-        <span class="text-muted text-sm">₸ — будет добавлено к итогу</span>
+        <input class="form-input" type="number" min="0" style="width:180px" value="${mb}" onchange="saveMonthBonus('${selMonth}',Number(this.value))">
+        <span class="text-muted text-sm">₸</span>
       </div>
     </div>
-    <div class="salary-total" style="margin-bottom:16px">
-      <span class="salary-total-label">ИТОГО К ВЫПЛАТЕ за ${selectedMonth}</span>
-      <span class="salary-total-value">${fmtMoney(grandTotal)}</span>
+    <div class="salary-total mb-16">
+      <span class="salary-total-label">ИТОГО К ВЫПЛАТЕ — ${selMonth}</span>
+      <span class="salary-total-value">${fmtMoney(grand)}</span>
     </div>`;
 
-  // Detail table
   if(filtered.length){
-    html+=`<div class="card">
-      <div class="card-title">Детализация по сменам</div>
+    html+=`<div class="card"><div class="card-title">Детализация</div>
       <table class="hist-table"><thead><tr><th>Дата</th><th>Тип</th><th>База</th><th>Вычеты</th><th>Переработка</th><th>Премия</th><th>Итого</th></tr></thead><tbody>`;
     filtered.sort((a,b)=>a.date>b.date?1:-1).forEach(s=>{
-      const {base,deduct,overtimePay,bonus,total}=calcSalary(s);
-      const type=s.weekendMode?'Выходной':s.overtime?'Перераб.':'Будни';
+      const r=calcSalary(s);
       html+=`<tr>
         <td>${fmtDate(s.date)}${s.edited?'<span class="badge badge-gray" style="margin-left:4px">✎</span>':''}</td>
-        <td>${type}</td>
-        <td>${fmtMoney(base)}</td>
-        <td style="color:${deduct>0?'var(--red)':'var(--text2)'}">${deduct>0?'−'+fmtMoney(deduct):'—'}</td>
-        <td style="color:${overtimePay>0?'var(--accent)':'var(--text2)'}">${overtimePay>0?'+'+fmtMoney(overtimePay):'—'}</td>
-        <td style="color:${bonus>0?'var(--green)':'var(--text2)'}">${bonus>0?'+'+fmtMoney(bonus):'—'}</td>
-        <td class="text-mono" style="font-weight:500">${fmtMoney(total)}</td>
+        <td>${s.weekendMode?'Выход.':r.overtimePay>0?'Перераб.':'Будни'}</td>
+        <td>${fmtMoney(r.base)}</td>
+        <td style="color:${r.deduct>0?'var(--red)':'var(--text2)'}">${r.deduct>0?'−'+fmtMoney(r.deduct):'—'}</td>
+        <td style="color:${r.overtimePay>0?'var(--accent)':'var(--text2)'}">${r.overtimePay>0?'+'+fmtMoney(r.overtimePay):'—'}</td>
+        <td style="color:${r.bonus>0?'var(--green)':'var(--text2)'}">${r.bonus>0?'+'+fmtMoney(r.bonus):'—'}</td>
+        <td class="text-mono" style="font-weight:500">${fmtMoney(r.total)}</td>
       </tr>`;
     });
     html+=`</tbody></table></div>`;
   }
 
-  if(mb>0){
-    html+=`<div class="card"><div class="card-title">Разовая премия</div><div class="flex items-center justify-between"><span>Премия за ${selectedMonth}</span><span class="text-mono" style="color:var(--green);font-size:1.1rem">+${fmtMoney(mb)}</span></div></div>`;
-  }
-
-  html+=`<div class="flex gap-8 no-print" style="margin-top:8px">
-    <button class="btn btn-secondary" onclick="window.print()">🖨 Распечатать квиток</button>
+  html+=`<div class="flex gap-8" style="margin-top:8px">
+    <button class="btn btn-secondary btn-sm" onclick="showReceipt('${selMonth}')">📄 Просмотреть квиток</button>
   </div>`;
-
   el.innerHTML=html;
 }
 
-function saveSelectedMonth(val){ save('selectedMonth',val); renderSalaryTab(); }
-function saveMonthBonus(month,val){ const mb=load('monthBonus',{}); mb[month]=val; save('monthBonus',mb); renderSalaryTab(); }
+function saveSelMonth(v){ save('selMonth',v); renderSalaryTab(); }
+function saveMonthBonus(m,v){ const mb=load('monthBonus',{}); mb[m]=v; save('monthBonus',mb); renderSalaryTab(); }
+
+function showReceipt(selMonth){
+  const shifts=load('shifts',{});
+  const filtered=Object.values(shifts).filter(s=>s.date&&s.date.startsWith(selMonth)&&s.clockIn&&s.clockOut).sort((a,b)=>a.date>b.date?1:-1);
+  let wdCount=0,weCount=0,otCount=0,totBase=0,totDeduct=0,totOT=0,totBonus=0,totAll=0;
+  filtered.forEach(s=>{
+    const r=calcSalary(s);
+    if(s.weekendMode) weCount++; else wdCount++;
+    if(r.overtimePay>0) otCount++;
+    totBase+=r.base; totDeduct+=r.deduct; totOT+=r.overtimePay; totBonus+=r.bonus; totAll+=r.total;
+  });
+  const mb=load('monthBonus',{})[selMonth]||0;
+  const grand=totAll+mb;
+  const cfg=getCfg();
+
+  let txt=``;
+  txt+=`╔══════════════════════════════╗\n`;
+  txt+=`║   РАСЧЁТНЫЙ ЛИСТОК           ║\n`;
+  txt+=`║   Период: ${selMonth}          ║\n`;
+  txt+=`╚══════════════════════════════╝\n\n`;
+  txt+=`📊 СВОДКА\n`;
+  txt+=`─────────────────────────────\n`;
+  txt+=`Будних смен:       ${wdCount}\n`;
+  txt+=`Выходных смен:     ${weCount}\n`;
+  txt+=`С переработкой:    ${otCount}\n`;
+  txt+=`Всего смен:        ${filtered.length}\n\n`;
+  txt+=`💰 НАЧИСЛЕНИЯ\n`;
+  txt+=`─────────────────────────────\n`;
+  txt+=`База (${wdCount} × ${fmtMoney(cfg.shiftBase)}):   ${fmtMoney(totBase)}\n`;
+  txt+=`Вычеты:            −${fmtMoney(totDeduct)}\n`;
+  txt+=`Выходные/перераб.: +${fmtMoney(totOT)}\n`;
+  txt+=`Премии по сменам:  +${fmtMoney(totBonus)}\n`;
+  if(mb>0) txt+=`Разовая премия:    +${fmtMoney(mb)}\n`;
+  txt+=`─────────────────────────────\n`;
+  txt+=`ИТОГО К ВЫПЛАТЕ:   ${fmtMoney(grand)}\n\n`;
+  txt+=`📋 ДЕТАЛИЗАЦИЯ\n`;
+  txt+=`─────────────────────────────\n`;
+  filtered.forEach(s=>{
+    const r=calcSalary(s);
+    const type=s.weekendMode?'вых':r.overtimePay>0?'пер':'буд';
+    txt+=`${s.date} [${type}] ${fmtMoney(r.total)}`;
+    if(r.deduct>0) txt+=` (вычет −${fmtMoney(r.deduct)})`;
+    txt+=`\n`;
+  });
+  txt+=`\nСформировано: ${new Date().toLocaleString('ru-RU')}`;
+
+  receiptText=txt;
+  document.getElementById('receipt-text').textContent=txt;
+  document.getElementById('receipt-modal').classList.add('open');
+}
+
+function copyReceipt(){
+  navigator.clipboard.writeText(receiptText).then(()=>alert('Скопировано!')).catch(()=>alert('Не удалось скопировать'));
+}
+function sendReceiptWA(){
+  const url='https://wa.me/?text='+encodeURIComponent(receiptText);
+  window.open(url,'_blank');
+}
 
 // ─── SETTINGS TAB ─────────────────────────────────────────────────────────────
 function renderSettings(){
@@ -867,64 +852,89 @@ function renderSettings(){
   const cfg=getCfg();
   const tasks=getTasks();
 
-  let html=`
-    <div class="card">
-      <div class="card-title">Сетка зарплаты</div>
-      ${settingRow('Ставка за смену (₸)','shiftBase',cfg.shiftBase)}
-      ${settingRow('Вычет за невыполненный пункт (₸)','deductPerTask',cfg.deductPerTask)}
-      ${settingRow('Месячный фонд (₸)','monthlyRate',cfg.monthlyRate)}
-      ${settingRow('Рабочих дней в месяце','workDays',cfg.workDays)}
-      ${settingRow('Часов в рабочем дне','hoursPerDay',cfg.hoursPerDay)}
-      ${settingRow('Начало переработки (час)','overtimeStartHour',cfg.overtimeStartHour)}
-      <div style="margin-top:14px;padding-top:14px;border-top:0.5px solid var(--border);font-size:0.8rem;color:var(--text2)">
-        Ставка в час: <span class="text-mono" style="color:var(--accent)">${fmtMoney(hourlyRate(cfg))}/час</span>
-      </div>
+  let html=`<div class="card">
+    <div class="card-title">Сетка зарплаты</div>
+    ${sRow('Ставка за смену (₸)','shiftBase',cfg.shiftBase)}
+    ${sRow('Вычет за невыполненный пункт (₸)','deductPerTask',cfg.deductPerTask)}
+    ${sRow('Ставка в час (₸)','hourlyRate',cfg.hourlyRate)}
+    ${sRow('Начало переработки (час)','overtimeStartHour',cfg.overtimeStartHour)}
+    <div style="margin-top:12px;padding-top:12px;border-top:0.5px solid var(--border);font-size:0.8rem;color:var(--text2)">
+      Переработка и выходные: <span class="text-mono" style="color:var(--accent)">${fmtMoney(cfg.hourlyRate)}/час</span>
     </div>
-    <div class="card">
-      <div class="card-title">Чек-лист — управление задачами</div>
-      <div id="task-list-editor">`;
+  </div>
+  <div class="card">
+    <div class="card-title">Чек-лист — задачи</div>
+    <div id="task-list-editor">`;
 
   tasks.forEach((t,i)=>{
+    const freqLabel=t.freq==='daily'?'каждый день':t.freq==='mon-wed-fri'?'Пн,Ср,Пт':t.freq==='tue-thu'?'Вт,Чт':t.freq==='once'?`разово: ${t.onceDate||'?'}`:'?';
     html+=`<div class="task-edit-item">
       <span style="font-size:0.75rem;color:var(--text3);width:20px">${i+1}</span>
-      <input class="task-edit-name" value="${t.label}" onchange="updateTaskLabel(${i},this.value)" style="flex:1">
-      <select style="background:var(--surface2);border:0.5px solid var(--border2);border-radius:6px;color:var(--text);padding:4px 8px;font-size:0.75rem;outline:none" onchange="updateTaskFreq(${i},this.value)">
-        <option value="daily" ${t.freq==='daily'?'selected':''}>Каждый день</option>
-        <option value="3x_week" ${t.freq==='3x_week'?'selected':''}>3×/нед</option>
-        <option value="2x_week" ${t.freq==='2x_week'?'selected':''}>2×/нед</option>
-      </select>
+      <input class="task-edit-name" value="${t.label}" onchange="updateTaskLabel(${i},this.value)">
+      <span style="font-size:0.75rem;color:var(--text3);white-space:nowrap">${freqLabel}</span>
       <button class="btn btn-danger btn-sm" onclick="deleteTask(${i})">✕</button>
     </div>`;
   });
 
   html+=`</div>
-      <button class="btn btn-secondary btn-sm mt-12" onclick="document.getElementById('addtask-modal').classList.add('open')">+ Добавить задачу</button>
+    <div class="flex gap-8 mt-12">
+      <button class="btn btn-secondary btn-sm" onclick="openAddTask(false)">+ Постоянная задача</button>
+      <button class="btn btn-ghost btn-sm" onclick="openAddTask(true)">+ Разовая задача</button>
     </div>
-    <div class="card">
-      <div class="card-title">Сброс данных</div>
-      <button class="btn btn-danger btn-sm" onclick="if(confirm('Сбросить ВСЕ данные?')){localStorage.clear();alert('Готово')}">Очистить все данные</button>
-    </div>`;
+  </div>
+  <div class="card">
+    <div class="card-title">Синхронизация</div>
+    <button class="btn btn-secondary btn-sm" onclick="syncAll()">↑ Синхронизировать всю историю</button>
+    <div id="sync-msg" style="font-size:0.75rem;color:var(--text3);margin-top:8px"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Сброс</div>
+    <button class="btn btn-danger btn-sm" onclick="if(confirm('Сбросить ВСЕ данные?')){localStorage.clear();alert('Готово')}">Очистить все данные</button>
+  </div>`;
 
   el.innerHTML=html;
 }
 
-function settingRow(label,key,val){
-  return `<div class="settings-row">
-    <div><div class="settings-label">${label}</div></div>
-    <input class="settings-input" type="number" value="${val}" onchange="saveCfg('${key}',Number(this.value))">
-  </div>`;
+function sRow(label,key,val){
+  return `<div class="settings-row"><div><div style="font-size:0.9rem">${label}</div></div>
+    <input class="settings-input" type="number" value="${val}" onchange="saveCfg('${key}',Number(this.value))"></div>`;
 }
-function saveCfg(key,val){ const cfg=getCfg(); cfg[key]=val; save('cfg',cfg); renderSettings(); }
+function saveCfg(key,val){ const c=getCfg(); c[key]=val; save('cfg',c); renderSettings(); }
 function updateTaskLabel(i,val){ const t=getTasks(); t[i].label=val; save('tasks',t); }
-function updateTaskFreq(i,val){ const t=getTasks(); t[i].freq=val; save('tasks',t); renderSettings(); }
-function deleteTask(i){ if(!confirm('Удалить задачу?')) return; const t=getTasks(); t.splice(i,1); save('tasks',t); renderSettings(); }
+function deleteTask(i){ if(!confirm('Удалить задачу?'))return; const t=getTasks(); t.splice(i,1); save('tasks',t); renderSettings(); }
+
+function openAddTask(isOnce){
+  document.getElementById('addtask-title').textContent=isOnce?'Разовая задача':'Добавить задачу';
+  document.getElementById('newtask-label').value='';
+  document.getElementById('newtask-sub').value='';
+  document.getElementById('newtask-date').value=today();
+  const freqSel=document.getElementById('newtask-freq');
+  const freqRow=document.getElementById('newtask-freq-row');
+  const dateRow=document.getElementById('newtask-date-row');
+  if(isOnce){
+    freqSel.value='once';
+    freqRow.classList.add('hidden');
+    dateRow.classList.remove('hidden');
+  } else {
+    freqSel.value='daily';
+    freqRow.classList.remove('hidden');
+    dateRow.classList.add('hidden');
+  }
+  document.getElementById('addtask-modal').classList.add('open');
+}
+
+document.getElementById('newtask-freq').addEventListener('change',function(){
+  document.getElementById('newtask-date-row').classList.toggle('hidden',this.value!=='once');
+});
+
 function saveNewTask(){
   const label=document.getElementById('newtask-label').value.trim();
   if(!label) return;
   const sub=document.getElementById('newtask-sub').value.trim();
   const freq=document.getElementById('newtask-freq').value;
+  const onceDate=freq==='once'?document.getElementById('newtask-date').value:null;
   const t=getTasks();
-  t.push({id:'custom_'+Date.now(),label,sub,freq});
+  t.push({id:'custom_'+Date.now(),label,sub,freq,onceDate});
   save('tasks',t);
   closeModal('addtask-modal');
   renderSettings();
@@ -933,12 +943,31 @@ function saveNewTask(){
 // ─── SYNC ─────────────────────────────────────────────────────────────────────
 function syncToSheets(shift){
   const {deduct,overtimePay,bonus,total}=calcSalary(shift);
-  fetch(SHEETS_URL,{
-    method:'POST', mode:'no-cors',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({...shift,penalty:deduct,overtime_pay:overtimePay,bonus,total})
-  }).catch(()=>{});
+  const params=new URLSearchParams({
+    date:shift.date,
+    clockIn:shift.clockIn||'',
+    clockOut:shift.clockOut||'',
+    type:shift.weekendMode?'Выходной':overtimePay>0?'Переработка':'Будни',
+    deduct,
+    overtime:overtimePay,
+    bonus,
+    total,
+    edited:shift.edited?'да':'нет'
+  });
+  fetch(SHEETS_URL+'?'+params.toString(),{method:'GET',mode:'no-cors'}).catch(()=>{});
 }
+
+function syncAll(){
+  const shifts=load('shifts',{});
+  let count=0;
+  Object.values(shifts).forEach(s=>{ if(s.clockOut){ syncToSheets(s); count++; } });
+  const msg=document.getElementById('sync-msg');
+  if(msg){ msg.textContent=`Отправлено ${count} записей...`; setTimeout(()=>{ msg.textContent=`✓ Готово`; },1500); }
+}
+
+// ─── UTILS ────────────────────────────────────────────────────────────────────
+function mkEl(tag,cls,html){ const e=document.createElement(tag); e.className=cls; e.innerHTML=html; return e; }
+function mkCard(title){ const c=document.createElement('div'); c.className='card'; if(title) c.innerHTML=`<div class="card-title">${title}</div>`; return c; }
 </script>
 </body>
 </html>
