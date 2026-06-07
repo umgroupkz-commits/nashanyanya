@@ -1049,7 +1049,7 @@ function saveNannyEdit(){
 // ─── HISTORY TAB ──────────────────────────────────────────────────────────────
 function renderHistory(){
   const el=document.getElementById('tab-history');
-  const shifts=load('shifts',{});
+  const shifts=lsGet('shifts',{});
   const dates=Object.keys(shifts).filter(d=>shifts[d].clockIn).sort().reverse();
   const isEmp=currentRole==='employer';
   let html=`<div class="card-title" style="padding:0 0 10px">История смен</div>`;
@@ -1251,7 +1251,7 @@ function renderSalaryTab(){
   }
 
   // Employer view
-  const shifts=load('shifts',{});
+  const shifts=lsGet('shifts',{});
   const now=new Date();
   const curYM=`${now.getFullYear()}-${pad(now.getMonth()+1)}`;
   const months=[...new Set(Object.keys(shifts).filter(d=>shifts[d].clockIn).map(d=>d.slice(0,7)))].sort().reverse();
@@ -1268,7 +1268,7 @@ function renderSalaryTab(){
     if(r.overtimePay>0) otCount++;
     totBase+=r.base; totDeduct+=r.deduct; totOT+=r.overtimePay; totBonus+=r.bonus; totAll+=r.total;
   });
-  const mb=load('monthBonus',{})[selMonth]||0;
+  const mb=lsGet('monthBonus',{})[selMonth]||0;
   const grand=totAll+mb;
 
   let html=`
@@ -1334,10 +1334,10 @@ function renderSalaryTab(){
 }
 
 function saveSelMonth(v){ lsSet('selMonth',v); renderSalaryTab(); }
-function saveMonthBonus(m,v){ const mb=load('monthBonus',{}); mb[m]=v; lsSet('monthBonus',mb); renderSalaryTab(); }
+function saveMonthBonus(m,v){ const mb=lsGet('monthBonus',{}); mb[m]=v; lsSet('monthBonus',mb); renderSalaryTab(); }
 
 function renderSalaryWorker(el){
-  const shifts=load('shifts',{});
+  const shifts=lsGet('shifts',{});
   const now=new Date();
   const curYM=`${now.getFullYear()}-${pad(now.getMonth()+1)}`;
   const cfg=getCfg();
@@ -1351,7 +1351,7 @@ function renderSalaryWorker(el){
     if(r.overtimePay>0) otCount++;
     totBase+=r.base; totDeduct+=r.deduct; totOT+=r.overtimePay; totBonus+=r.bonus; totAll+=r.total;
   });
-  const mb=load('monthBonus',{})[curYM]||0;
+  const mb=lsGet('monthBonus',{})[curYM]||0;
   const grand=totAll+mb;
 
   // Today's open shift estimate
@@ -1425,7 +1425,7 @@ function renderSalaryWorker(el){
 }
 
 function showReceipt(selMonth){
-  const shifts=load('shifts',{});
+  const shifts=lsGet('shifts',{});
   const filtered=Object.values(shifts).filter(s=>s.date&&s.date.startsWith(selMonth)&&s.clockIn&&s.clockOut).sort((a,b)=>a.date>b.date?1:-1);
   let wdCount=0,weCount=0,otCount=0,totBase=0,totDeduct=0,totOT=0,totBonus=0,totAll=0;
   filtered.forEach(s=>{
@@ -1434,7 +1434,7 @@ function showReceipt(selMonth){
     if(r.overtimePay>0) otCount++;
     totBase+=r.base; totDeduct+=r.deduct; totOT+=r.overtimePay; totBonus+=r.bonus; totAll+=r.total;
   });
-  const mb=load('monthBonus',{})[selMonth]||0;
+  const mb=lsGet('monthBonus',{})[selMonth]||0;
   const grand=totAll+mb;
   const cfg=getCfg();
 
