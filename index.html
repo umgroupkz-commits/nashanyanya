@@ -177,6 +177,7 @@ select.form-input{cursor:pointer}
     </div>
   </div>
   <div class="main-tabs" id="tabs-row"></div>
+  <div id="sync-status-bar" style="display:none;background:rgba(232,200,74,0.12);color:var(--accent);font-size:0.75rem;text-align:center;padding:6px;border-bottom:0.5px solid var(--border)"></div>
   <div style="flex:1;overflow-y:auto">
     <div class="content" id="tab-nanny" style="display:none"></div>
     <div class="content" id="tab-history" style="display:none"></div>
@@ -292,10 +293,8 @@ const DEFAULT_TASKS=[
   {id:'floors',label:'Протереть полы',sub:'Пн, Ср, Пт',freq:'mon-wed-fri'},
   {id:'cooking',label:'Приготовить обед на 2 дня',sub:'Вт, Чт',freq:'tue-thu'},
 ];
-
 const DEFAULT_CFG={shiftBase:7500,deductPerTask:2000,hourlyRate:1000,overtimeStartHour:19};
 
-// day schedule
 const DOW_NAMES=['вс','пн','вт','ср','чт','пт','сб'];
 function dowOfDate(dateStr){ return new Date(dateStr+'T12:00:00').getDay(); }
 function taskActiveOnDate(task,dateStr){
@@ -315,24 +314,80 @@ let clockInterval=null;
 let activeShiftDate=null;
 let receiptText='';
 
+// ─── STORAGE: localStorage = fast cache, Sheets = source of truth ─────────────
 function today(){ return new Date().toISOString().slice(0,10); }
 function nowTime(){ const d=new Date(); return pad(d.getHours())+':'+pad(d.getMinutes()); }
 function pad(n){ return String(n).padStart(2,'0'); }
-function load(k,def){ try{return JSON.parse(localStorage.getItem(k)||'null')||def;}catch{return def;} }
-function save(k,v){ localStorage.setItem(k,JSON.stringify(v)); }
-function getTasks(){ return load('tasks',DEFAULT_TASKS); }
-function getCfg(){ return {...DEFAULT_CFG,...load('cfg',{})}; }
-function getShift(date){ return (load('shifts',{}))[date]||null; }
-function saveShift(date,shift){ const s=load('shifts',{}); s[date]=shift; save('shifts',s); }
+function lsGet(k,def){ try{return JSON.parse(localStorage.getItem(k)||'null')||def;}catch{return def;} }
+function lsSet(k,v){ localStorage.setItem(k,JSON.stringify(v)); }
+
+function getTasks(){ return lsGet('tasks',DEFAULT_TASKS); }
+function getCfg(){ return {...DEFAULT_CFG,...lsGet('cfg',{})}; }
+function getShift(date){ return (lsGet('shifts',{}))[date]||null; }
+
+function saveShift(date,shift){
+  // 1. Update local cache immediately (fast UI)
+  const all=lsGet('shifts',{}); all[date]=shift; lsSet('shifts',all);
+  // 2. Push to Sheets in background
+  sheetsRequest({action:'saveShift',date,shift:JSON.stringify(shift)});
+}
+
 function getOrCreate(date){
   let s=getShift(date);
   if(!s){
     const dow=dowOfDate(date);
-    s={date,clockIn:null,clockOut:null,tasks:{},comments:{},overtime:false,weekendMode:(dow===0||dow===6),salary:0,edited:false,editedAt:null,bonus:0};
-    saveShift(date,s);
+    s={date,clockIn:null,clockOut:null,tasks:{},comments:{},overtime:false,
+       weekendMode:(dow===0||dow===6),salary:0,edited:false,editedAt:null,bonus:0};
+    // Don't save to Sheets yet — only when clockIn happens
+    const all=lsGet('shifts',{}); all[date]=s; lsSet('shifts',all);
   }
   return s;
 }
+
+// Sheets request via fetch (GET with params)
+function sheetsRequest(params){
+  const qs=Object.entries(params).map(([k,v])=>
+    encodeURIComponent(k)+'='+encodeURIComponent(v)).join('&');
+  return fetch(SHEETS_URL+'?'+qs)
+    .then(r=>r.json())
+    .catch(()=>({ok:false,error:'network'}));
+}
+
+// Load ALL data from Sheets → overwrite local cache → callback
+function loadAllFromSheets(onDone){
+  showSyncStatus('Загружаем данные...');
+  sheetsRequest({action:'getAll'})
+    .then(res=>{
+      if(res.ok && res.data){
+        const d=res.data;
+        if(d.shifts)  lsSet('shifts', d.shifts);
+        if(d.cfg)     lsSet('cfg',    d.cfg);
+        if(d.tasks && d.tasks.length) lsSet('tasks', d.tasks);
+        showSyncStatus('');
+      } else {
+        showSyncStatus('⚠ Нет связи — работаем офлайн');
+      }
+      onDone();
+    })
+    .catch(()=>{ showSyncStatus('⚠ Нет связи — работаем офлайн'); onDone(); });
+}
+
+function showSyncStatus(msg){
+  let el=document.getElementById('sync-status-bar');
+  if(!el) return;
+  el.textContent=msg;
+  el.style.display=msg?'block':'none';
+}
+
+// Settings sync
+function syncSettings(){
+  sheetsRequest({
+    action:'saveSettings',
+    cfg:JSON.stringify(getCfg()),
+    tasks:JSON.stringify(getTasks())
+  });
+}
+
 function fmtDate(d){ return new Date(d+'T12:00:00').toLocaleDateString('ru-RU',{day:'numeric',month:'short',weekday:'short'}); }
 function fmtMoney(n){ return Number(n||0).toLocaleString('ru-RU')+'₸'; }
 function toMins(t){ if(!t) return 0; const[h,m]=t.split(':').map(Number); return h*60+m; }
@@ -408,16 +463,11 @@ function launchApp(){
   badge.className='status-badge '+(currentRole==='nanny'?'work':'ot');
   activeShiftDate=today();
   buildTabs();
-  // Show loading state, then load settings from Sheets
   const firstTab=currentRole==='nanny'?'nanny':'history';
-  const tabEl=document.getElementById('tab-'+firstTab);
-  if(tabEl) tabEl.innerHTML=`<div style="padding:40px;text-align:center;color:var(--text3)">Загрузка настроек...</div>`;
-  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-  const activeBtn=document.getElementById('tab-btn-'+firstTab);
-  if(activeBtn) activeBtn.classList.add('active');
-  loadSettingsFromSheets(()=>{
-    showTab(firstTab);
+  ['nanny','history','salary','settings'].forEach(t=>{
+    const e=document.getElementById('tab-'+t); if(e) e.style.display='none';
   });
+  loadAllFromSheets(()=>{ showTab(firstTab); });
 }
 function buildTabs(){
   const tabs=document.getElementById('tabs-row');
@@ -981,6 +1031,9 @@ function openEditModal(date){
     <div class="form-row"><label class="form-label">Премия (₸)</label>
       <input class="form-input" type="number" min="0" value="${shift.bonus||0}" onchange="editField('${date}','bonus',Number(this.value))"></div>
     ${tasksHtml}
+    <div id="edit-salary-preview" style="background:var(--surface2);border-radius:var(--radius);padding:12px;margin-top:14px">
+      ${calcEditPreview(date)}
+    </div>
     <div class="flex gap-8 mt-16" style="flex-wrap:wrap">
       <button class="btn btn-danger btn-sm" onclick="deleteShift('${date}')">🗑 Удалить запись</button>
       <div style="flex:1"></div>
@@ -989,9 +1042,34 @@ function openEditModal(date){
     </div>`;
   document.getElementById('edit-modal').classList.add('open');
 }
+
+function calcEditPreview(date){
+  const s=getShift(date);
+  if(!s||!s.clockIn) return `<span style="color:var(--text3);font-size:0.8rem">Укажите время прихода</span>`;
+  // Simulate with current data
+  const tmpShift={...s};
+  if(tmpShift.clockIn&&tmpShift.clockOut){
+    const cfg=getCfg();
+    if(!tmpShift.weekendMode){
+      const outM=toMins(tmpShift.clockOut);
+      const inM=toMins(tmpShift.clockIn);
+      const otFromM=Math.max(cfg.overtimeStartHour*60,inM);
+      tmpShift.overtime=(outM-otFromM)>15;
+    }
+  }
+  const r=calcSalary(tmpShift);
+  return `<div style="font-size:0.75rem;color:var(--text3);margin-bottom:6px">ИТОГО ЗА СМЕНУ</div>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:1.4rem;color:var(--accent);font-weight:500">${fmtMoney(r.total)}</div>
+    ${r.base>0?`<div style="font-size:0.78rem;color:var(--text2);margin-top:4px">База ${fmtMoney(r.base)}${r.deduct>0?' − вычеты '+fmtMoney(r.deduct):''}${r.overtimePay>0?' + переработка '+fmtMoney(r.overtimePay):''}</div>`:''}
+    ${r.overtimePay>0&&!s.weekendMode?`<div style="font-size:0.78rem;color:var(--text3)">Переработка: с ${Math.floor(Math.max(getCfg().overtimeStartHour*60,toMins(s.clockIn))/60)}:${pad(Math.max(getCfg().overtimeStartHour*60,toMins(s.clockIn))%60)} до ${s.clockOut}</div>`:''}`;
+}
+
 function editField(date,field,val){
   const s=getOrCreate(date); s[field]=val; s.edited=true; s.editedAt=new Date().toLocaleString('ru-RU');
   saveShift(date,s);
+  // Update live preview
+  const prev=document.getElementById('edit-salary-preview');
+  if(prev) prev.innerHTML=calcEditPreview(date);
 }
 function editTaskState(date,taskId,val){
   const s=getOrCreate(date);
@@ -1009,20 +1087,31 @@ function editTaskComment(date,taskId,val){
 }
 function finalizeEdit(date){
   const s=getOrCreate(date);
-  // recalc overtime based on clockOut
-  if(!s.weekendMode && s.clockOut){
-    const cfg=getCfg();
-    // only auto-update if employer didn't manually set it (we keep manual override)
+  // Recalculate overtime flag based on current clockIn/clockOut
+  if(s.clockIn && s.clockOut){
+    if(s.weekendMode){
+      s.overtime=false; // weekend uses hourly from clockIn, not overtime flag
+    } else {
+      const cfg=getCfg();
+      const outM=toMins(s.clockOut);
+      const inM=toMins(s.clockIn);
+      const otFromM=Math.max(cfg.overtimeStartHour*60, inM);
+      s.overtime=(outM-otFromM)>15;
+    }
   }
-  const {total}=calcSalary(s); s.salary=total;
-  saveShift(date,s); syncToSheets(s);
-  closeModal('edit-modal'); renderHistory();
+  const {total}=calcSalary(s);
+  s.salary=total;
+  saveShift(date,s);
+  syncToSheets(s);
+  closeModal('edit-modal');
+  renderHistory();
 }
 function deleteShift(date){
   if(!confirm('Удалить запись за '+fmtDate(date)+'?\nЭто действие нельзя отменить.')) return;
-  const shifts=load('shifts',{});
+  const shifts=lsGet('shifts',{});
   delete shifts[date];
-  save('shifts',shifts);
+  lsSet('shifts',shifts);
+  sheetsRequest({action:'deleteShift',date});
   closeModal('edit-modal');
   renderHistory();
 }
@@ -1044,8 +1133,11 @@ function renderSalaryTab(){
   const curYM=`${now.getFullYear()}-${pad(now.getMonth()+1)}`;
   const months=[...new Set(Object.keys(shifts).filter(d=>shifts[d].clockIn).map(d=>d.slice(0,7)))].sort().reverse();
   if(!months.length){ el.innerHTML=`<div class="card"><div class="text-muted text-sm" style="padding:20px 0;text-align:center">Нет данных</div></div>`; return; }
-  const selMonth=load('selMonth',curYM);
-  const filtered=Object.values(shifts).filter(s=>s.date&&s.date.startsWith(selMonth)&&s.clockIn&&s.clockOut);
+  // Always default to current month if it exists in data, otherwise latest
+  const savedMonth=lsGet('selMonth',null);
+  const selMonth=(savedMonth && months.includes(savedMonth)) ? savedMonth : (months.includes(curYM) ? curYM : months[0]);
+  // Include ALL shifts with clockIn (even without clockOut — count as in-progress)
+  const filtered=Object.values(shifts).filter(s=>s.date&&s.date.startsWith(selMonth)&&s.clockIn);
   let wdCount=0,weCount=0,otCount=0,totBase=0,totDeduct=0,totOT=0,totBonus=0,totAll=0;
   filtered.forEach(s=>{
     const r=calcSalary(s);
@@ -1118,8 +1210,8 @@ function renderSalaryTab(){
   el.innerHTML=html;
 }
 
-function saveSelMonth(v){ save('selMonth',v); renderSalaryTab(); }
-function saveMonthBonus(m,v){ const mb=load('monthBonus',{}); mb[m]=v; save('monthBonus',mb); renderSalaryTab(); }
+function saveSelMonth(v){ lsSet('selMonth',v); renderSalaryTab(); }
+function saveMonthBonus(m,v){ const mb=load('monthBonus',{}); mb[m]=v; lsSet('monthBonus',mb); renderSalaryTab(); }
 
 function renderSalaryWorker(el){
   const shifts=load('shifts',{});
@@ -1128,7 +1220,7 @@ function renderSalaryWorker(el){
   const cfg=getCfg();
   const hr=cfg.hourlyRate;
 
-  const filtered=Object.values(shifts).filter(s=>s.date&&s.date.startsWith(curYM)&&s.clockIn&&s.clockOut);
+  const filtered=Object.values(shifts).filter(s=>s.date&&s.date.startsWith(curYM)&&s.clockIn);
   let wdCount=0,weCount=0,otCount=0,totBase=0,totDeduct=0,totOT=0,totBonus=0,totAll=0;
   filtered.forEach(s=>{
     const r=calcSalary(s);
@@ -1320,9 +1412,9 @@ function sRow(label,key,val){
   return `<div class="settings-row"><div><div style="font-size:0.9rem">${label}</div></div>
     <input class="settings-input" type="number" value="${val}" onchange="saveCfg('${key}',Number(this.value))"></div>`;
 }
-function saveCfg(key,val){ const c=getCfg(); c[key]=val; save('cfg',c); syncSettings(); renderSettings(); }
-function updateTaskLabel(i,val){ const t=getTasks(); t[i].label=val; save('tasks',t); syncSettings(); }
-function deleteTask(i){ if(!confirm('Удалить задачу?'))return; const t=getTasks(); t.splice(i,1); save('tasks',t); syncSettings(); renderSettings(); }
+function saveCfg(key,val){ const c=getCfg(); c[key]=val; lsSet('cfg',c); syncSettings(); renderSettings(); }
+function updateTaskLabel(i,val){ const t=getTasks(); t[i].label=val; lsSet('tasks',t); syncSettings(); }
+function deleteTask(i){ if(!confirm('Удалить задачу?'))return; const t=getTasks(); t.splice(i,1); lsSet('tasks',t); syncSettings(); renderSettings(); }
 
 function openAddTask(isOnce){
   document.getElementById('addtask-title').textContent=isOnce?'Разовая задача':'Добавить задачу';
@@ -1356,72 +1448,31 @@ function saveNewTask(){
   const onceDate=freq==='once'?document.getElementById('newtask-date').value:null;
   const t=getTasks();
   t.push({id:'custom_'+Date.now(),label,sub,freq,onceDate});
-  save('tasks',t);
+  lsSet('tasks',t);
   syncSettings();
   closeModal('addtask-modal');
   renderSettings();
 }
 
 // ─── SYNC ─────────────────────────────────────────────────────────────────────
-// Sends shift data to Sheets
-function syncToSheets(shift){
-  const {deduct,overtimePay,bonus,total}=calcSalary(shift);
-  const params=new URLSearchParams({
-    action:'shift',
-    date:shift.date||'',
-    clockIn:shift.clockIn||'',
-    clockOut:shift.clockOut||'',
-    type:shift.weekendMode?'Выходной':shift.overtime?'Переработка':'Будни',
-    deduct:String(deduct),
-    overtime:String(overtimePay),
-    bonus:String(bonus),
-    total:String(total),
-    edited:shift.edited?'да':'нет',
-    editReason:shift.nannyEditReason||''
-  });
-  pingSheets(params.toString());
-}
+// saveShift already calls sheetsRequest — syncToSheets kept as alias for compatibility
+function syncToSheets(shift){ saveShift(shift.date, shift); }
 
-// Saves cfg+tasks to Sheets (called on every settings change)
 function syncSettings(){
-  const params=new URLSearchParams({
-    action:'settings',
+  sheetsRequest({
+    action:'saveSettings',
     cfg:JSON.stringify(getCfg()),
     tasks:JSON.stringify(getTasks())
   });
-  pingSheets(params.toString());
-}
-
-// Image-ping trick — bypasses CORS for GET requests to Apps Script
-function pingSheets(qs){
-  const img=new Image();
-  img.src=SHEETS_URL+'?'+qs;
-}
-
-// Load settings from Sheets on startup — fetch via script redirect
-function loadSettingsFromSheets(callback){
-  const url=SHEETS_URL+'?action=getSettings';
-  fetch(url)
-    .then(r=>r.json())
-    .then(data=>{
-      if(data.cfg){ save('cfg',data.cfg); }
-      if(data.tasks && data.tasks.length){ save('tasks',data.tasks); }
-      callback();
-    })
-    .catch(()=>{ callback(); }); // on error just proceed with localStorage
 }
 
 function syncAll(){
-  const shifts=load('shifts',{});
-  let count=0;
-  Object.values(shifts).forEach(s=>{ if(s.clockOut){ syncToSheets(s); count++; } });
-  syncSettings();
   const msg=document.getElementById('sync-msg');
-  if(msg){
-    msg.textContent='Отправляем '+count+' смен + настройки...';
-    msg.style.color='var(--text2)';
-    setTimeout(()=>{ msg.textContent='✓ Готово — проверьте таблицу'; msg.style.color='var(--green)'; },2000);
-  }
+  if(msg){ msg.textContent='Загружаем все данные из таблицы...'; msg.style.color='var(--text2)'; }
+  loadAllFromSheets(()=>{
+    if(msg){ msg.textContent='✓ Данные обновлены'; msg.style.color='var(--green)'; }
+    renderHistory();
+  });
 }
 
 // ─── UTILS ────────────────────────────────────────────────────────────────────
