@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Няня — Трекер смен</title>
+<title>Работник — Трекер смен</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Geologica:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -147,7 +147,7 @@ select.form-input{cursor:pointer}
 <div id="pin-screen">
   <div><div class="pin-logo">Домашний трекер</div><div class="pin-sub">Введите PIN-код</div></div>
   <div class="pin-role-tabs">
-    <button class="active" onclick="selectRole('nanny')">Няня</button>
+    <button class="active" onclick="selectRole('nanny')">Работник</button>
     <button onclick="selectRole('employer')">Работодатель</button>
   </div>
   <div class="pin-dots" id="pin-dots">
@@ -400,7 +400,7 @@ function launchApp(){
   document.getElementById('app').style.display='flex';
   document.getElementById('today-date').textContent=new Date().toLocaleDateString('ru-RU',{weekday:'long',day:'numeric',month:'long'});
   const badge=document.getElementById('role-badge');
-  badge.innerHTML=`<span class="status-dot"></span>${currentRole==='nanny'?'Няня':'Работодатель'}`;
+  badge.innerHTML=`<span class="status-dot"></span>${currentRole==='nanny'?'Работник':'Работодатель'}`;
   badge.className='status-badge '+(currentRole==='nanny'?'work':'ot');
   activeShiftDate=today();
   buildTabs();
@@ -841,7 +841,7 @@ function renderHistory(){
         :'<span class="badge badge-green">Будни</span>';
       const editMark=s.edited
         ?(s.editedBy==='nanny'
-          ?` <span class="badge badge-blue">✎ няня</span>`
+          ?` <span class="badge badge-blue">✎ работник</span>`
           :` <span class="badge badge-gray">✎</span>`)
         :'';
       const editBtn=isEmp
@@ -868,7 +868,7 @@ function renderHistory(){
         if(r.deduct>0) html+=`<div class="shift-card-row"><span class="shift-card-row-label">Вычеты</span><span style="color:var(--red)">−${fmtMoney(r.deduct)}</span></div>`;
         if(r.overtimePay>0) html+=`<div class="shift-card-row"><span class="shift-card-row-label">Переработка</span><span style="color:var(--accent)">+${fmtMoney(r.overtimePay)}</span></div>`;
         if(r.bonus>0) html+=`<div class="shift-card-row"><span class="shift-card-row-label">Премия</span><span style="color:var(--green)">+${fmtMoney(r.bonus)}</span></div>`;
-        if(s.nannyEditReason) html+=`<div class="shift-card-row"><span class="shift-card-row-label">Правка няни</span><span style="color:var(--blue);font-size:0.78rem">${s.nannyEditReason}</span></div>`;
+        if(s.nannyEditReason) html+=`<div class="shift-card-row"><span class="shift-card-row-label">Правка работника</span><span style="color:var(--blue);font-size:0.78rem">${s.nannyEditReason}</span></div>`;
       } else {
         if(r.deduct>0) html+=`<div class="shift-card-row"><span class="shift-card-row-label">Вычеты</span><span style="color:var(--red)">−${fmtMoney(r.deduct)}</span></div>`;
         if(r.overtimePay>0) html+=`<div class="shift-card-row"><span class="shift-card-row-label">Переработка</span><span style="color:var(--accent)">+${fmtMoney(r.overtimePay)}</span></div>`;
@@ -913,7 +913,7 @@ function openEditModal(date){
   }
   const cfg=getCfg();
   document.getElementById('edit-modal-body').innerHTML=`
-    ${shift.nannyEditReason?`<div class="edited-notice" style="margin-bottom:14px">✎ Няня исправила: <strong>${shift.nannyEditReason}</strong> <span style="color:var(--text3);font-size:0.75rem">(${shift.editedAt||''})</span></div>`:''}
+    ${shift.nannyEditReason?`<div class="edited-notice" style="margin-bottom:14px">✎ Работник исправила: <strong>${shift.nannyEditReason}</strong> <span style="color:var(--text3);font-size:0.75rem">(${shift.editedAt||''})</span></div>`:''}
     <div class="form-row"><label class="form-label">Приход</label>
       <input class="form-input" type="time" value="${shift.clockIn||''}" onchange="editField('${date}','clockIn',this.value)"></div>
     <div class="form-row"><label class="form-label">Уход</label>
