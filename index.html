@@ -407,7 +407,19 @@ function loadAllFromSheets(onDone){
     {action:'getAll'},
     function(res){
       const d=res.data;
-      if(d.shifts && Object.keys(d.shifts).length) lsSet('shifts', d.shifts);
+      if(d.shifts && Object.keys(d.shifts).length){
+        // Normalize date keys — convert any format to YYYY-MM-DD
+        const normalized={};
+        Object.entries(d.shifts).forEach(([k,v])=>{
+          const clean=normDate(k);
+          v.date=clean;
+          // Normalize clockIn/clockOut too
+          if(v.clockIn) v.clockIn=normTime(v.clockIn);
+          if(v.clockOut) v.clockOut=normTime(v.clockOut);
+          normalized[clean]=v;
+        });
+        lsSet('shifts', normalized);
+      }
       if(d.cfg)   lsSet('cfg',   d.cfg);
       if(d.tasks && d.tasks.length) lsSet('tasks', d.tasks);
       showSyncStatus('');
@@ -420,6 +432,30 @@ function loadAllFromSheets(onDone){
       onDone();
     }
   );
+}
+
+// Normalize any date string to YYYY-MM-DD
+function normDate(s){
+  if(!s) return s;
+  s=String(s).trim();
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const d=new Date(s);
+  if(!isNaN(d.getTime())){
+    return d.getFullYear()+'-'+
+      String(d.getMonth()+1).padStart(2,'0')+'-'+
+      String(d.getDate()).padStart(2,'0');
+  }
+  return s;
+}
+
+// Normalize any time string to HH:MM
+function normTime(s){
+  if(!s) return null;
+  s=String(s).trim();
+  if(/^\d{2}:\d{2}$/.test(s)) return s;
+  const m=s.match(/(\d{1,2}):(\d{2})/);
+  if(m) return m[1].padStart(2,'0')+':'+m[2];
+  return s;
 }
 
 function syncSettings(){
@@ -553,15 +589,25 @@ function showTab(id){
       {action:'getAll'},
       function(res){
         if(res&&res.data){
-          if(res.data.shifts&&Object.keys(res.data.shifts).length) lsSet('shifts',res.data.shifts);
-          if(res.data.cfg)   lsSet('cfg',   res.data.cfg);
-          if(res.data.tasks&&res.data.tasks.length) lsSet('tasks',res.data.tasks);
+          const d=res.data;
+          if(d.shifts&&Object.keys(d.shifts).length){
+            const normalized={};
+            Object.entries(d.shifts).forEach(([k,v])=>{
+              const clean=normDate(k);
+              v.date=clean;
+              if(v.clockIn)  v.clockIn=normTime(v.clockIn);
+              if(v.clockOut) v.clockOut=normTime(v.clockOut);
+              normalized[clean]=v;
+            });
+            lsSet('shifts',normalized);
+          }
+          if(d.cfg) lsSet('cfg',d.cfg);
+          if(d.tasks&&d.tasks.length) lsSet('tasks',d.tasks);
         }
         if(id==='history') renderHistory();
         if(id==='salary')  renderSalaryTab();
       },
       function(){
-        // Offline — render from cache
         if(id==='history') renderHistory();
         if(id==='salary')  renderSalaryTab();
       }
