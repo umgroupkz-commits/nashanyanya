@@ -1211,10 +1211,9 @@ function editTaskComment(date,taskId,val){
 }
 function finalizeEdit(date){
   const s=getOrCreate(date);
-  // Recalculate overtime flag based on current clockIn/clockOut
   if(s.clockIn && s.clockOut){
     if(s.weekendMode){
-      s.overtime=false; // weekend uses hourly from clockIn, not overtime flag
+      s.overtime=false;
     } else {
       const cfg=getCfg();
       const outM=toMins(s.clockOut);
@@ -1225,17 +1224,25 @@ function finalizeEdit(date){
   }
   const {total}=calcSalary(s);
   s.salary=total;
-  saveShift(date,s);
+  // Save locally first
+  const all=lsGet('shifts',{}); all[date]=s; lsSet('shifts',all);
+  // Push to Sheets
+  sheetsWrite({action:'saveShift', date:date, shift:JSON.stringify(s)});
   closeModal('edit-modal');
+  // Render from local cache immediately
   renderHistory();
 }
+
 function deleteShift(date){
   if(!confirm('Удалить запись за '+fmtDate(date)+'?\nЭто действие нельзя отменить.')) return;
+  // Remove from local cache
   const shifts=lsGet('shifts',{});
   delete shifts[date];
   lsSet('shifts',shifts);
-  sheetsRequest({action:'deleteShift',date});
+  // Push delete to Sheets
+  sheetsWrite({action:'deleteShift', date:date});
   closeModal('edit-modal');
+  // Render immediately from updated cache
   renderHistory();
 }
 
@@ -1614,10 +1621,8 @@ function saveNewTask(){
 }
 
 // ─── SYNC ─────────────────────────────────────────────────────────────────────
-// saveShift already calls sheetsRequest — syncToSheets kept as alias for compatibility
-
 function syncSettings(){
-  sheetsRequest({
+  sheetsWrite({
     action:'saveSettings',
     cfg:JSON.stringify(getCfg()),
     tasks:JSON.stringify(getTasks())
@@ -1626,7 +1631,7 @@ function syncSettings(){
 
 function syncAll(){
   const msg=document.getElementById('sync-msg');
-  if(msg){ msg.textContent='Загружаем все данные из таблицы...'; msg.style.color='var(--text2)'; }
+  if(msg){ msg.textContent='Загружаем из таблицы...'; msg.style.color='var(--text2)'; }
   loadAllFromSheets(()=>{
     if(msg){ msg.textContent='✓ Данные обновлены'; msg.style.color='var(--green)'; }
     renderHistory();
