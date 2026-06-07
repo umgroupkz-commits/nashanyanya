@@ -384,12 +384,13 @@ function launchApp(){
   badge.innerHTML=`<span class="status-dot"></span>${currentRole==='nanny'?'Няня':'Работодатель'}`;
   badge.className='status-badge '+(currentRole==='nanny'?'work':'ot');
   activeShiftDate=today();
-  buildTabs(); showTab('nanny');
+  buildTabs();
+  showTab(currentRole==='nanny'?'nanny':'history');
 }
 function buildTabs(){
   const tabs=document.getElementById('tabs-row');
   const list=currentRole==='employer'
-    ?[{id:'nanny',label:'Смена'},{id:'history',label:'История'},{id:'salary',label:'Зарплата'},{id:'settings',label:'Настройки'}]
+    ?[{id:'history',label:'История'},{id:'salary',label:'Зарплата'},{id:'settings',label:'Настройки'}]
     :[{id:'nanny',label:'Смена'},{id:'history',label:'История'}];
   tabs.innerHTML=list.map(t=>`<button class="tab-btn" id="tab-btn-${t.id}" onclick="showTab('${t.id}')">${t.label}</button>`).join('');
 }
@@ -626,25 +627,65 @@ function tryClockOut(){
     const activeTasks=getTasks().filter(t=>taskActiveOnDate(t,date));
     const unfinished=activeTasks.filter(t=>!shift.tasks[t.id]);
     if(unfinished.length>0){
-      // show confirm with deduct info
       const cfg=getCfg();
-      const deductCount=unfinished.length;
-      const deductAmt=Math.min(deductCount*cfg.deductPerTask,cfg.shiftBase);
-      let body=`<div class="warn-notice">Есть невыполненные пункты без причины — будет применён вычет.</div>`;
-      body+=`<div style="font-size:0.85rem;margin-bottom:12px">Невыполненные задачи:</div><ul style="font-size:0.85rem;color:var(--text2);padding-left:20px;line-height:2">`;
-      unfinished.forEach(t=>{ body+=`<li>${t.label}</li>`; });
-      body+=`</ul><div class="salary-total mt-12"><span class="salary-total-label">Вычет</span><span style="font-family:'JetBrains Mono',monospace;font-size:1.4rem;color:var(--red)">−${fmtMoney(deductAmt)}</span></div>`;
+      const deductAmt=Math.min(unfinished.length*cfg.deductPerTask,cfg.shiftBase);
+      let body=`<div class="warn-notice">Есть невыполненные задачи. Укажите причину — тогда вычета не будет. Или закройте со вычетом.</div>`;
+      body+=`<div style="font-size:0.8rem;color:var(--text3);margin-bottom:10px">Для каждой задачи можно вписать причину (тогда вычета нет) или оставить пустым (вычет −${fmtMoney(cfg.deductPerTask)}):</div>`;
+      unfinished.forEach(t=>{
+        body+=`<div style="margin-bottom:12px">
+          <div style="font-size:0.85rem;margin-bottom:4px;color:var(--text)">${t.label}</div>
+          <input id="close-reason-${t.id}" class="form-input" style="font-size:0.8rem;padding:7px 10px" placeholder="Причина (необязательно — оставьте пустым для вычета)">
+        </div>`;
+      });
+      body+=`<div id="close-deduct-preview" style="font-size:0.8rem;color:var(--text2);margin-top:8px">Считаем вычеты...</div>`;
       document.getElementById('close-confirm-body').innerHTML=body;
+      // store unfinished task ids for confirmClockOut
+      document.getElementById('close-confirm-modal').dataset.tasks=JSON.stringify(unfinished.map(t=>t.id));
       document.getElementById('close-confirm-modal').classList.add('open');
+      updateClosePreview();
+      // live update preview as user types
+      unfinished.forEach(t=>{
+        const inp=document.getElementById('close-reason-'+t.id);
+        if(inp) inp.addEventListener('input',updateClosePreview);
+      });
       return;
     }
   }
   confirmClockOut();
 }
 
+function updateClosePreview(){
+  const cfg=getCfg();
+  const modal=document.getElementById('close-confirm-modal');
+  const taskIds=JSON.parse(modal.dataset.tasks||'[]');
+  let withDeduct=0;
+  taskIds.forEach(id=>{
+    const inp=document.getElementById('close-reason-'+id);
+    if(!inp||!inp.value.trim()) withDeduct++;
+  });
+  const deductAmt=Math.min(withDeduct*cfg.deductPerTask,cfg.shiftBase);
+  const preview=document.getElementById('close-deduct-preview');
+  if(preview){
+    if(withDeduct===0) preview.innerHTML=`<span style="color:var(--green)">✓ Вычетов нет — все причины указаны</span>`;
+    else preview.innerHTML=`Вычет составит: <span style="color:var(--red);font-weight:500">−${fmtMoney(deductAmt)}</span> (${withDeduct} задач без причины)`;
+  }
+}
+
 function confirmClockOut(){
   closeModal('close-confirm-modal');
   const shift=getOrCreate(activeShiftDate);
+  // save any reasons entered in the modal
+  const modal=document.getElementById('close-confirm-modal');
+  const taskIds=JSON.parse(modal.dataset.tasks||'[]');
+  taskIds.forEach(id=>{
+    const inp=document.getElementById('close-reason-'+id);
+    const reason=inp?inp.value.trim():'';
+    if(reason){
+      shift.tasks[id]='na';
+      shift.comments[id]=reason;
+    }
+    // if no reason — task stays unset, deduct applies
+  });
   const t=nowTime();
   shift.clockOut=t;
   if(!shift.weekendMode){
@@ -680,22 +721,30 @@ function openNannyEdit(date){
   tasks.forEach(t=>{
     const state=shift.tasks[t.id];
     const comment=shift.comments[t.id]||'';
+    const isNA=state==='na';
     body+=`<div class="task-edit-item">
-      <select id="ne-task-${t.id}" style="background:var(--surface2);border:0.5px solid var(--border2);border-radius:6px;color:var(--text);padding:4px 8px;font-size:0.8rem;outline:none">
+      <select id="ne-task-${t.id}" onchange="neToggleComment('${t.id}',this.value)"
+        style="background:var(--surface2);border:0.5px solid var(--border2);border-radius:6px;color:var(--text);padding:4px 8px;font-size:0.8rem;outline:none">
         <option value="" ${!state?'selected':''}>Не выполнено (вычет)</option>
         <option value="true" ${state===true?'selected':''}>✓ Выполнено</option>
-        <option value="na" ${state==='na'?'selected':''}>— Без вычета (с причиной)</option>
+        <option value="na" ${isNA?'selected':''}>— Без вычета (с причиной)</option>
       </select>
       <span style="font-size:0.85rem;flex:1">${t.label}</span>
     </div>
-    ${state==='na'?`<div style="padding:0 0 6px 0"><input class="form-input" id="ne-comment-${t.id}" style="font-size:0.8rem;padding:6px 10px" placeholder="Причина..." value="${comment}"></div>`:
-    `<div id="ne-comment-wrap-${t.id}"></div>`}`;
+    <div id="ne-comment-wrap-${t.id}" style="padding:0 0 6px 0;display:${isNA?'block':'none'}">
+      <input class="form-input" id="ne-comment-${t.id}" style="font-size:0.8rem;padding:6px 10px"
+        placeholder="Причина невыполнения..." value="${comment}">
+    </div>`;
   });
   body+=`</div>`;
   document.getElementById('nanny-edit-body').innerHTML=body;
   document.getElementById('nanny-edit-modal').classList.add('open');
-  // store date for save
   document.getElementById('nanny-edit-modal').dataset.date=date;
+}
+
+function neToggleComment(taskId, val){
+  const wrap=document.getElementById('ne-comment-wrap-'+taskId);
+  if(wrap) wrap.style.display=(val==='na')?'block':'none';
 }
 
 function saveNannyEdit(){
@@ -750,7 +799,7 @@ function renderHistory(){
   if(!dates.length){
     html+=`<div class="text-muted text-sm" style="padding:20px 0;text-align:center">Нет данных</div>`;
   } else {
-    html+=`<table class="hist-table"><thead><tr><th>Дата</th><th>Приход</th><th>Уход</th><th>Тип</th><th>Вычеты</th><th>Итого</th>${currentRole==='employer'?'<th></th>':''}</tr></thead><tbody>`;
+    html+=`<table class="hist-table"><thead><tr><th>Дата</th><th>Приход</th><th>Уход</th><th>Тип</th><th>Вычеты</th><th>Итого</th><th></th></tr></thead><tbody>`;
     dates.forEach(d=>{
       const s=shifts[d];
       const {deduct,total}=calcSalary(s);
@@ -759,6 +808,9 @@ function renderHistory(){
         ?`<span class="badge badge-blue" style="margin-left:4px" title="Правка няни: ${s.nannyEditReason||''}">✎ няня</span>`
         :`<span class="badge badge-gray" style="margin-left:4px">✎</span>`)
         :'';
+      const editBtn=currentRole==='employer'
+        ?`<button class="btn btn-ghost btn-sm" onclick="openEditModal('${d}')">✎</button>`
+        :`<button class="btn btn-ghost btn-sm" onclick="openNannyEdit('${d}')">✎</button>`;
       html+=`<tr>
         <td>${fmtDate(d)}${editMark}</td>
         <td>${s.clockIn||'—'}</td>
@@ -766,8 +818,9 @@ function renderHistory(){
         <td>${badge}</td>
         <td style="color:${deduct>0?'var(--red)':'var(--text2)'}">${deduct>0?'−'+fmtMoney(deduct):'—'}</td>
         <td class="text-mono" style="font-weight:500">${s.clockOut?fmtMoney(total):'—'}</td>
-        ${currentRole==='employer'?`<td><button class="btn btn-ghost btn-sm" onclick="openEditModal('${d}')">✎</button></td>`:''}
+        <td>${editBtn}</td>
       </tr>`;
+    });
     });
     html+=`</tbody></table>`;
   }
