@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Няня — Трекер смен</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geologica:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f0f11;
+  --surface:#18181c;
+  --surface2:#212126;
+  --surface3:#2a2a30;
+  --border:#2e2e36;
+  --border2:#3d3d48;
+  --text:#f0f0f4;
+  --text2:#9090a0;
+  --text3:#5a5a6a;
+  --accent:#e8c84a;
+  --accent-dim:#a08a20;
+  --green:#4ade80;
+  --green-dim:#166534;
+  --red:#f87171;
+  --red-dim:#7f1d1d;
+  --blue:#60a5fa;
+  --blue-dim:#1e3a5f;
+  --radius:10px;
+  --radius-lg:16px;
+}
+body{background:var(--bg);color:var(--text);font-family:'Geologica',sans-serif;min-height:100vh;font-size:15px}
+
+/* PIN SCREEN */
+#pin-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:2rem}
+.pin-logo{font-size:2.2rem;font-weight:600;letter-spacing:-0.03em;color:var(--accent)}
+.pin-sub{color:var(--text2);font-size:0.85rem;letter-spacing:0.08em;text-transform:uppercase}
+.pin-role-tabs{display:flex;gap:8px;background:var(--surface);border-radius:var(--radius);padding:4px}
+.pin-role-tabs button{padding:8px 20px;border:none;background:transparent;color:var(--text2);border-radius:8px;cursor:pointer;font-family:'Geologica',sans-serif;font-size:0.85rem;transition:all 0.2s}
+.pin-role-tabs button.active{background:var(--surface3);color:var(--text)}
+.pin-dots{display:flex;gap:12px}
+.pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--border2);background:transparent;transition:all 0.2s}
+.pin-dot.filled{background:var(--accent);border-color:var(--accent)}
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:240px}
+.pin-btn{padding:18px;background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:1.3rem;font-family:'JetBrains Mono',monospace;cursor:pointer;transition:all 0.15s}
+.pin-btn:hover{background:var(--surface2);border-color:var(--border2)}
+.pin-btn:active{transform:scale(0.95)}
+.pin-error{color:var(--red);font-size:0.8rem;min-height:1.2em;text-align:center}
+
+/* MAIN LAYOUT */
+#app{display:none;min-height:100vh;flex-direction:column}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;border-bottom:0.5px solid var(--border);background:var(--surface)}
+.topbar-brand{font-size:1rem;font-weight:600;color:var(--accent);letter-spacing:-0.02em}
+.topbar-info{display:flex;align-items:center;gap:16px;font-size:0.8rem;color:var(--text2)}
+.topbar-date{font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--text3)}
+.logout-btn{background:transparent;border:0.5px solid var(--border);color:var(--text2);padding:5px 12px;border-radius:6px;cursor:pointer;font-family:'Geologica',sans-serif;font-size:0.75rem;transition:all 0.2s}
+.logout-btn:hover{border-color:var(--border2);color:var(--text)}
+
+.main-tabs{display:flex;border-bottom:0.5px solid var(--border);background:var(--surface);padding:0 24px;gap:0}
+.tab-btn{padding:12px 20px;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--text2);cursor:pointer;font-family:'Geologica',sans-serif;font-size:0.85rem;transition:all 0.2s;margin-bottom:-0.5px}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab-btn:hover:not(.active){color:var(--text)}
+
+.content{padding:24px;max-width:800px;margin:0 auto;width:100%}
+
+/* CARDS */
+.card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px}
+.card-title{font-size:0.7rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);margin-bottom:14px}
+
+/* STATUS BADGE */
+.status-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:500}
+.status-badge.work{background:rgba(74,222,128,0.12);color:var(--green);border:0.5px solid rgba(74,222,128,0.3)}
+.status-badge.off{background:var(--surface2);color:var(--text2);border:0.5px solid var(--border)}
+.status-badge.overtime{background:rgba(232,200,74,0.12);color:var(--accent);border:0.5px solid rgba(232,200,74,0.3)}
+.status-dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+
+/* TIME DISPLAY */
+.time-display{font-family:'JetBrains Mono',monospace;font-size:2.8rem;font-weight:400;color:var(--text);letter-spacing:-0.02em;line-height:1}
+.time-label{font-size:0.75rem;color:var(--text3);margin-top:4px}
+
+/* BUTTONS */
+.btn{padding:12px 24px;border-radius:var(--radius);border:none;cursor:pointer;font-family:'Geologica',sans-serif;font-size:0.9rem;font-weight:500;transition:all 0.2s;display:inline-flex;align-items:center;gap:8px}
+.btn-primary{background:var(--accent);color:#0f0f11}
+.btn-primary:hover{filter:brightness(1.1)}
+.btn-danger{background:rgba(248,113,113,0.15);color:var(--red);border:0.5px solid rgba(248,113,113,0.3)}
+.btn-danger:hover{background:rgba(248,113,113,0.25)}
+.btn-secondary{background:var(--surface2);color:var(--text);border:0.5px solid var(--border)}
+.btn-secondary:hover{background:var(--surface3)}
+.btn:disabled{opacity:0.4;cursor:not-allowed;filter:none}
+.btn-sm{padding:7px 14px;font-size:0.8rem}
+
+/* CHECKLIST */
+.checklist-item{display:flex;align-items:flex-start;gap:12px;padding:14px 0;border-bottom:0.5px solid var(--border)}
+.checklist-item:last-child{border-bottom:none}
+.check-box{width:22px;height:22px;border-radius:6px;border:0.5px solid var(--border2);background:transparent;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.2s;margin-top:1px}
+.check-box.checked{background:var(--green);border-color:var(--green)}
+.check-box.checked::after{content:'✓';color:#fff;font-size:13px;font-weight:600}
+.check-box.na{background:var(--surface3);border-color:var(--border2)}
+.check-box.na::after{content:'—';color:var(--text3);font-size:11px}
+.check-label{flex:1;font-size:0.9rem;line-height:1.4;cursor:pointer}
+.check-label.done{text-decoration:line-through;color:var(--text2)}
+.check-freq{font-size:0.7rem;color:var(--text3);margin-top:2px}
+.check-actions{display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+.comment-field{width:100%;margin-top:8px;background:var(--surface2);border:0.5px solid var(--border2);border-radius:8px;padding:8px 12px;color:var(--text);font-family:'Geologica',sans-serif;font-size:0.8rem;resize:none;outline:none}
+.comment-field:focus{border-color:var(--accent)}
+.comment-required{color:var(--red);font-size:0.72rem;margin-top:4px}
+
+/* PENALTY INDICATOR */
+.penalty-bar{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--surface2);border-radius:var(--radius);border:0.5px solid var(--border)}
+.penalty-amount{font-family:'JetBrains Mono',monospace;font-size:1.4rem;font-weight:500}
+.penalty-amount.good{color:var(--green)}
+.penalty-amount.warn{color:var(--accent)}
+.penalty-amount.bad{color:var(--red)}
+
+/* OVERTIME TOGGLE */
+.overtime-card{padding:16px;border-radius:var(--radius);border:0.5px solid rgba(232,200,74,0.3);background:rgba(232,200,74,0.06)}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.toggle{position:relative;width:44px;height:24px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;inset:0;background:var(--surface3);border-radius:12px;cursor:pointer;transition:0.2s}
+.toggle-slider::before{content:'';position:absolute;width:18px;height:18px;left:3px;top:3px;background:var(--text2);border-radius:50%;transition:0.2s}
+.toggle input:checked+.toggle-slider{background:var(--accent)}
+.toggle input:checked+.toggle-slider::before{transform:translateX(20px);background:#0f0f11}
+
+/* SALARY SUMMARY */
+.salary-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.salary-item{background:var(--surface2);border-radius:var(--radius);padding:14px}
+.salary-item-label{font-size:0.7rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px}
+.salary-item-value{font-family:'JetBrains Mono',monospace;font-size:1.2rem;color:var(--text)}
+.salary-total{background:var(--surface2);border:0.5px solid rgba(232,200,74,0.4);border-radius:var(--radius);padding:16px;display:flex;justify-content:space-between;align-items:center}
+.salary-total-label{font-size:0.8rem;color:var(--text2)}
+.salary-total-value{font-family:'JetBrains Mono',monospace;font-size:1.8rem;font-weight:500;color:var(--accent)}
+
+/* HISTORY TABLE */
+.hist-table{width:100%;border-collapse:collapse}
+.hist-table th{font-size:0.7rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text3);padding:8px 12px;text-align:left;border-bottom:0.5px solid var(--border)}
+.hist-table td{padding:10px 12px;font-size:0.85rem;border-bottom:0.5px solid var(--border)}
+.hist-table tr:last-child td{border-bottom:none}
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:0.7rem;font-weight:500}
+.badge-green{background:rgba(74,222,128,0.12);color:var(--green)}
+.badge-amber{background:rgba(232,200,74,0.12);color:var(--accent)}
+.badge-red{background:rgba(248,113,113,0.12);color:var(--red)}
+.badge-blue{background:rgba(96,165,250,0.12);color:var(--blue)}
+
+/* SHEETS SYNC */
+.sync-row{display:flex;align-items:center;gap:10px}
+.sync-input{flex:1;background:var(--surface2);border:0.5px solid var(--border2);border-radius:var(--radius);padding:10px 14px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:0.8rem;outline:none}
+.sync-input:focus{border-color:var(--accent)}
+.sync-status{font-size:0.75rem;color:var(--text3);margin-top:8px}
+.sync-status.ok{color:var(--green)}
+.sync-status.err{color:var(--red)}
+
+/* DONE SCREEN */
+.done-screen{display:flex;flex-direction:column;align-items:center;gap:16px;padding:40px 20px;text-align:center}
+.done-icon{font-size:3rem}
+.done-title{font-size:1.4rem;font-weight:600;color:var(--green)}
+.done-sub{color:var(--text2);font-size:0.9rem}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:100;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border:0.5px solid var(--border2);border-radius:var(--radius-lg);padding:24px;max-width:400px;width:90%;position:relative}
+.modal-title{font-size:1rem;font-weight:600;margin-bottom:16px}
+.modal-close{position:absolute;top:16px;right:16px;background:none;border:none;color:var(--text2);cursor:pointer;font-size:1.2rem}
+
+/* WEEKEND BADGE */
+.weekend-notice{background:rgba(96,165,250,0.08);border:0.5px solid rgba(96,165,250,0.3);border-radius:var(--radius);padding:14px;margin-bottom:16px;font-size:0.85rem;color:var(--blue)}
+
+/* UTIL */
+.flex{display:flex}.gap-8{gap:8px}.gap-12{gap:12px}.items-center{align-items:center}.justify-between{justify-content:space-between}
+.mt-8{margin-top:8px}.mt-12{margin-top:12px}.mt-16{margin-top:16px}.mb-8{margin-bottom:8px}
+.text-sm{font-size:0.8rem}.text-muted{color:var(--text2)}.text-mono{font-family:'JetBrains Mono',monospace}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+
+<!-- PIN SCREEN -->
+<div id="pin-screen">
+  <div>
+    <div class="pin-logo" style="text-align:center">Домашний трекер</div>
+    <div class="pin-sub" style="text-align:center;margin-top:6px">Введите PIN-код</div>
+  </div>
+  <div class="pin-role-tabs">
+    <button class="active" onclick="selectRole('nanny')">Няня</button>
+    <button onclick="selectRole('owner')">Хозяин</button>
+  </div>
+  <div class="pin-dots" id="pin-dots">
+    <div class="pin-dot" id="d0"></div>
+    <div class="pin-dot" id="d1"></div>
+    <div class="pin-dot" id="d2"></div>
+    <div class="pin-dot" id="d3"></div>
+  </div>
+  <div class="pin-pad">
+    <button class="pin-btn" onclick="pinPress('1')">1</button>
+    <button class="pin-btn" onclick="pinPress('2')">2</button>
+    <button class="pin-btn" onclick="pinPress('3')">3</button>
+    <button class="pin-btn" onclick="pinPress('4')">4</button>
+    <button class="pin-btn" onclick="pinPress('5')">5</button>
+    <button class="pin-btn" onclick="pinPress('6')">6</button>
+    <button class="pin-btn" onclick="pinPress('7')">7</button>
+    <button class="pin-btn" onclick="pinPress('8')">8</button>
+    <button class="pin-btn" onclick="pinPress('9')">9</button>
+    <button class="pin-btn" onclick="pinClear()" style="font-size:0.8rem;color:var(--text2)">сброс</button>
+    <button class="pin-btn" onclick="pinPress('0')">0</button>
+    <button class="pin-btn" onclick="pinBack()" style="font-size:1rem">⌫</button>
+  </div>
+  <div class="pin-error" id="pin-error"></div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app" style="display:none;flex-direction:column">
+  <div class="topbar">
+    <div class="flex items-center gap-12">
+      <span class="topbar-brand">Домашний трекер</span>
+      <span id="role-badge" class="status-badge off"><span class="status-dot"></span> —</span>
+    </div>
+    <div class="topbar-info">
+      <span class="topbar-date" id="today-date"></span>
+      <button class="logout-btn" onclick="logout()">Выйти</button>
+    </div>
+  </div>
+
+  <div class="main-tabs" id="tabs-row">
+    <!-- tabs inserted by JS -->
+  </div>
+
+  <div style="flex:1;overflow-y:auto">
+    <div class="content" id="tab-nanny" style="display:none"></div>
+    <div class="content" id="tab-history" style="display:none"></div>
+    <div class="content" id="tab-settings" style="display:none"></div>
+  </div>
+</div>
+
+<!-- MODAL: comment required -->
+<div class="modal-overlay" id="comment-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('comment-modal')">✕</button>
+    <div class="modal-title">Причина невыполнения</div>
+    <div class="text-sm text-muted mb-8">Опишите причину, по которой задача не выполнена. Задача не засчитается в штраф.</div>
+    <textarea class="comment-field" id="modal-comment-text" rows="3" placeholder="Например: ребёнок был у бабушки..."></textarea>
+    <div class="comment-required" id="modal-comment-err" style="display:none">Введите причину</div>
+    <div class="flex gap-8 mt-12">
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('comment-modal')">Отмена</button>
+      <button class="btn btn-primary btn-sm" onclick="saveComment()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const NANNY_PIN = '1111';
+const OWNER_PIN = '9999';
+const HOURLY = Math.round(160000 / 31 / 8);
+const SHIFT_BASE = 7500;
+const PENALTY_PER_TASK = 2000;
+const OVERTIME_START_HOUR = 19;
+
+let currentRole = 'nanny';
+let pinBuffer = '';
+let pendingCommentTaskId = null;
+
+// ─── DATA ───────────────────────────────────────────────────────────────────
+function today() {
+  return new Date().toISOString().slice(0,10);
+}
+function loadData(key, def) {
+  try { return JSON.parse(localStorage.getItem(key) || 'null') || def; } catch { return def; }
+}
+function saveData(key, val) {
+  localStorage.setItem(key, JSON.stringify(val));
+}
+
+// shift: {date, clockIn, clockOut, tasks:{id:bool|'na'}, comments:{id:str}, overtime:bool, weekendMode:bool, salary:number}
+function getShift(date) {
+  const shifts = loadData('shifts', {});
+  return shifts[date] || null;
+}
+function saveShift(date, shift) {
+  const shifts = loadData('shifts', {});
+  shifts[date] = shift;
+  saveData('shifts', shifts);
+}
+function getOrCreateShift(date) {
+  let s = getShift(date);
+  if (!s) {
+    const dow = new Date(date).getDay();
+    const isWeekend = (dow === 0 || dow === 6);
+    s = {date, clockIn:null, clockOut:null, tasks:{}, comments:{}, overtime:false, weekendMode:isWeekend, salary:0};
+    saveShift(date, s);
+  }
+  return s;
+}
+
+// ─── TASK DEFINITIONS ────────────────────────────────────────────────────────
+const TASKS = [
+  {id:'prep_school', label:'Подготовка к школе', sub:'30–60 мин', freq:'daily'},
+  {id:'feed_lunch',  label:'Покормить ребёнка обедом', sub:'', freq:'daily'},
+  {id:'walk',        label:'Прогулка', sub:'60–120 мин, если хорошая погода', freq:'daily'},
+  {id:'play',        label:'Игра без ТВ и телефонов', sub:'40–90 мин (90+ если не было прогулки)', freq:'daily'},
+  {id:'laundry',     label:'Стирка: закинуть / развесить / снять и сложить', sub:'', freq:'daily'},
+  {id:'dishes',      label:'Помыть посуду / загрузить посудомойку', sub:'', freq:'daily'},
+  {id:'floors',      label:'Протереть полы', sub:'3 раза в неделю', freq:'3x_week'},
+  {id:'cooking',     label:'Приготовить обед на 2 дня', sub:'2 раза в неделю', freq:'2x_week'},
+];
+
+// ─── PIN LOGIC ───────────────────────────────────────────────────────────────
+function selectRole(r) {
+  currentRole = r;
+  pinBuffer = '';
+  updateDots();
+  document.getElementById('pin-error').textContent = '';
+  document.querySelectorAll('.pin-role-tabs button').forEach((b,i)=>{
+    b.classList.toggle('active', (i===0&&r==='nanny')||(i===1&&r==='owner'));
+  });
+}
+function pinPress(d) {
+  if (pinBuffer.length >= 4) return;
+  pinBuffer += d;
+  updateDots();
+  if (pinBuffer.length === 4) setTimeout(checkPin, 100);
+}
+function pinBack() { pinBuffer = pinBuffer.slice(0,-1); updateDots(); }
+function pinClear() { pinBuffer = ''; updateDots(); document.getElementById('pin-error').textContent=''; }
+function updateDots() {
+  for (let i=0;i<4;i++) document.getElementById('d'+i).classList.toggle('filled', i < pinBuffer.length);
+}
+function checkPin() {
+  const ok = (currentRole==='nanny' && pinBuffer===NANNY_PIN) || (currentRole==='owner' && pinBuffer===OWNER_PIN);
+  if (ok) { launchApp(); }
+  else {
+    document.getElementById('pin-error').textContent = 'Неверный PIN';
+    pinBuffer = ''; updateDots();
+  }
+}
+
+// ─── APP ─────────────────────────────────────────────────────────────────────
+function launchApp() {
+  document.getElementById('pin-screen').style.display = 'none';
+  const app = document.getElementById('app');
+  app.style.display = 'flex';
+
+  const d = new Date();
+  document.getElementById('today-date').textContent = d.toLocaleDateString('ru-RU',{weekday:'long',day:'numeric',month:'long'});
+
+  const badge = document.getElementById('role-badge');
+  if (currentRole==='nanny') { badge.textContent=''; badge.innerHTML='<span class="status-dot"></span> Няня'; badge.className='status-badge work'; }
+  else { badge.textContent=''; badge.innerHTML='<span class="status-dot"></span> Хозяин'; badge.className='status-badge overtime'; }
+
+  buildTabs();
+  showTab('nanny');
+}
+
+function buildTabs() {
+  const tabs = document.getElementById('tabs-row');
+  const nannyTabs = [{id:'nanny',label:'Смена'},{id:'history',label:'История'}];
+  const ownerTabs = [{id:'nanny',label:'Смена'},{id:'history',label:'История'},{id:'settings',label:'Настройки'}];
+  const list = currentRole==='owner' ? ownerTabs : nannyTabs;
+  tabs.innerHTML = list.map(t=>`<button class="tab-btn" id="tab-btn-${t.id}" onclick="showTab('${t.id}')">${t.label}</button>`).join('');
+}
+
+function showTab(id) {
+  ['nanny','history','settings'].forEach(t=>{
+    document.getElementById('tab-'+t).style.display = t===id ? 'block' : 'none';
+    const btn = document.getElementById('tab-btn-'+t);
+    if (btn) btn.classList.toggle('active', t===id);
+  });
+  if (id==='nanny') renderNanny();
+  if (id==='history') renderHistory();
+  if (id==='settings') renderSettings();
+}
+
+// ─── NANNY TAB ────────────────────────────────────────────────────────────────
+let clockInterval = null;
+function renderNanny() {
+  const date = today();
+  const shift = getOrCreateShift(date);
+  const el = document.getElementById('tab-nanny');
+  el.innerHTML = '';
+
+  if (clockInterval) clearInterval(clockInterval);
+
+  if (shift.weekendMode) {
+    renderWeekend(el, shift, date);
+  } else {
+    renderWeekday(el, shift, date);
+  }
+}
+
+function renderWeekend(el, shift, date) {
+  const notice = document.createElement('div');
+  notice.className = 'weekend-notice';
+  notice.innerHTML = '<strong>Выходной день</strong> — Чек-листа нет. Начисление почасовое с момента прихода (~' + HOURLY + '₸/час).';
+  el.appendChild(notice);
+
+  // clock-in / clock-out
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = '<div class="card-title">Время работы</div>';
+
+  if (!shift.clockIn) {
+    card.innerHTML += `<button class="btn btn-primary" onclick="clockIn()">▶ Отметить приход</button>`;
+  } else {
+    const duration = shift.clockOut ? elapsed(shift.clockIn, shift.clockOut) : null;
+    card.innerHTML += `
+      <div class="flex items-center justify-between mb-8">
+        <div><div class="time-label">Приход</div><div class="text-mono" style="font-size:1.4rem">${shift.clockIn}</div></div>
+        ${shift.clockOut ? `<div><div class="time-label">Уход</div><div class="text-mono" style="font-size:1.4rem">${shift.clockOut}</div></div>` : `<div id="live-clock" class="time-display" style="font-size:1.8rem">--:--</div>`}
+      </div>`;
+    if (!shift.clockOut) {
+      card.innerHTML += `<button class="btn btn-danger mt-12" onclick="clockOut()">■ Отметить уход</button>`;
+    } else {
+      const pay = calcWeekendSalary(shift);
+      card.innerHTML += `<div class="salary-total mt-12"><span class="salary-total-label">Начислено за смену</span><span class="salary-total-value">${pay} ₸</span></div>`;
+    }
+  }
+  el.appendChild(card);
+  startClock();
+}
+
+function renderWeekday(el, shift, date) {
+  // Clock section
+  const clockCard = document.createElement('div');
+  clockCard.className = 'card';
+  clockCard.id = 'clock-card';
+
+  if (!shift.clockIn) {
+    clockCard.innerHTML = `<div class="card-title">Начало смены</div><button class="btn btn-primary" onclick="clockIn()">▶ Отметить приход</button>`;
+  } else {
+    const allDone = checkAllDone(shift);
+    const statusHtml = shift.clockOut
+      ? `<span class="status-badge off"><span class="status-dot"></span> Смена закрыта</span>`
+      : allDone
+        ? `<span class="status-badge work"><span class="status-dot"></span> Чек-лист выполнен</span>`
+        : `<span class="status-badge off"><span class="status-dot"></span> На смене</span>`;
+
+    clockCard.innerHTML = `
+      <div class="card-title">Смена ${date}</div>
+      <div class="flex items-center justify-between mb-8">
+        <div><div class="time-label">Приход</div><div class="text-mono" style="font-size:1.4rem">${shift.clockIn}</div></div>
+        ${shift.clockOut ? `<div><div class="time-label">Уход</div><div class="text-mono" style="font-size:1.4rem">${shift.clockOut}</div></div>` : `<div id="live-clock" class="time-display" style="font-size:1.8rem">--:--</div>`}
+      </div>
+      <div class="flex items-center justify-between mt-12">
+        ${statusHtml}
+        ${!shift.clockOut ? `<button class="btn btn-danger btn-sm" onclick="clockOut()">■ Уйти</button>` : ''}
+      </div>`;
+  }
+  el.appendChild(clockCard);
+
+  if (!shift.clockIn) return;
+
+  // Checklist
+  const allDone = checkAllDone(shift);
+  const clCard = document.createElement('div');
+  clCard.className = 'card';
+  clCard.innerHTML = '<div class="card-title">Чек-лист на сегодня</div>';
+
+  const taskList = document.createElement('div');
+  TASKS.forEach(task => {
+    taskList.appendChild(buildTaskItem(task, shift, date));
+  });
+  clCard.appendChild(taskList);
+  el.appendChild(clCard);
+
+  // Salary preview
+  const salCard = document.createElement('div');
+  salCard.className = 'card';
+  salCard.id = 'sal-card';
+  renderSalaryCard(salCard, shift);
+  el.appendChild(salCard);
+
+  // Overtime toggle (weekday, only if checklist done or owner)
+  if (allDone || currentRole==='owner') {
+    const otCard = document.createElement('div');
+    otCard.className = 'overtime-card mb-8' + (allDone ? '' : ' hidden');
+    otCard.id = 'ot-card';
+    otCard.innerHTML = `
+      <div class="toggle-row">
+        <div>
+          <div style="font-weight:500;font-size:0.9rem">Переработка по просьбе</div>
+          <div class="text-sm text-muted mt-8">Начисление с 19:00 (~${HOURLY} ₸/час)</div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="ot-toggle" ${shift.overtime?'checked':''} onchange="toggleOvertime(this.checked)"><span class="toggle-slider"></span></label>
+      </div>`;
+    el.insertBefore(otCard, salCard);
+  }
+
+  if (allDone && !shift.clockOut) {
+    const msg = document.createElement('div');
+    msg.className = 'done-screen';
+    msg.innerHTML = `<div class="done-icon">🎉</div><div class="done-title">Чек-лист выполнен!</div><div class="done-sub">Рабочий день окончен — можно идти домой!<br>Или отметьте переработку, если остаётесь.</div>`;
+    el.insertBefore(msg, salCard);
+  }
+
+  startClock();
+}
+
+function buildTaskItem(task, shift, date) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'checklist-item';
+  wrapper.id = 'task-'+task.id;
+
+  const state = shift.tasks[task.id];
+  const comment = shift.comments[task.id] || '';
+  const isChecked = state === true;
+  const isNA = state === 'na';
+  const locked = !!shift.clockOut;
+
+  const boxClass = isChecked ? 'checked' : isNA ? 'na' : '';
+
+  wrapper.innerHTML = `
+    <div class="check-box ${boxClass}" id="cb-${task.id}" onclick="${locked?'':'toggleTask(\''+task.id+'\')'}"></div>
+    <div style="flex:1">
+      <div class="check-label ${isChecked?'done':''}" onclick="${locked?'':'toggleTask(\''+task.id+'\')'}">
+        ${task.label}
+        ${task.freq!=='daily' ? `<span class="badge badge-blue" style="margin-left:6px">${task.freq==='3x_week'?'3×/нед':'2×/нед'}</span>` : ''}
+      </div>
+      ${task.sub ? `<div class="check-freq">${task.sub}</div>` : ''}
+      ${isNA && comment ? `<div style="font-size:0.78rem;color:var(--text2);margin-top:4px;background:var(--surface2);padding:6px 10px;border-radius:6px">📝 ${comment}</div>` : ''}
+      ${isNA && !comment && !locked ? `<div class="comment-required">⚠ Введите причину (без штрафа)</div>` : ''}
+    </div>
+    ${!locked && isNA ? `<button class="btn btn-secondary btn-sm" onclick="openCommentModal('${task.id}')">💬</button>` : ''}
+  `;
+  return wrapper;
+}
+
+function toggleTask(taskId) {
+  const date = today();
+  const shift = getOrCreateShift(date);
+  if (shift.clockOut) return;
+
+  const cur = shift.tasks[taskId];
+  if (!cur) {
+    shift.tasks[taskId] = true;
+  } else if (cur === true) {
+    // mark as NA — show comment modal
+    shift.tasks[taskId] = 'na';
+    openCommentModal(taskId);
+  } else if (cur === 'na') {
+    shift.tasks[taskId] = undefined;
+    delete shift.tasks[taskId];
+    delete shift.comments[taskId];
+  }
+  saveShift(date, shift);
+  renderNanny();
+}
+
+function openCommentModal(taskId) {
+  pendingCommentTaskId = taskId;
+  document.getElementById('modal-comment-text').value = (getOrCreateShift(today()).comments[taskId] || '');
+  document.getElementById('modal-comment-err').style.display = 'none';
+  document.getElementById('comment-modal').classList.add('open');
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function saveComment() {
+  const txt = document.getElementById('modal-comment-text').value.trim();
+  if (!txt) { document.getElementById('modal-comment-err').style.display='block'; return; }
+  const date = today();
+  const shift = getOrCreateShift(date);
+  shift.comments[pendingCommentTaskId] = txt;
+  saveShift(date, shift);
+  closeModal('comment-modal');
+  renderNanny();
+}
+
+function renderSalaryCard(el, shift) {
+  const {base, penalty, penaltyCount, overtime, total} = calcDaySalary(shift);
+  el.innerHTML = `
+    <div class="card-title">Расчёт за смену</div>
+    <div class="salary-grid mb-8">
+      <div class="salary-item"><div class="salary-item-label">База</div><div class="salary-item-value">${base} ₸</div></div>
+      <div class="salary-item"><div class="salary-item-label">Штрафы (${penaltyCount} × 2000)</div><div class="salary-item-value" style="color:${penalty>0?'var(--red)':'var(--text)'}">−${penalty} ₸</div></div>
+      <div class="salary-item"><div class="salary-item-label">Переработка</div><div class="salary-item-value" style="color:${overtime>0?'var(--accent)':'var(--text)'}">${overtime > 0 ? '+'+overtime+' ₸' : '—'}</div></div>
+    </div>
+    <div class="salary-total"><span class="salary-total-label">Итого за смену</span><span class="salary-total-value">${total} ₸</span></div>`;
+}
+
+function checkAllDone(shift) {
+  return TASKS.every(t => shift.tasks[t.id] === true || shift.tasks[t.id] === 'na');
+}
+
+function calcDaySalary(shift) {
+  if (shift.weekendMode) {
+    const pay = calcWeekendSalary(shift);
+    return {base:0, penalty:0, penaltyCount:0, overtime:pay, total:pay};
+  }
+  let penaltyCount = 0;
+  TASKS.forEach(t => {
+    if (!shift.tasks[t.id]) penaltyCount++;
+  });
+  const penalty = Math.min(penaltyCount * PENALTY_PER_TASK, SHIFT_BASE);
+  const base = SHIFT_BASE;
+  let overtime = 0;
+  if (shift.overtime && shift.clockOut) {
+    const outH = parseInt(shift.clockOut.split(':')[0]);
+    const outM = parseInt(shift.clockOut.split(':')[1]);
+    const otMins = Math.max(0, (outH*60+outM) - OVERTIME_START_HOUR*60);
+    overtime = Math.round((otMins / 60) * HOURLY);
+  } else if (shift.overtime && !shift.clockOut) {
+    const now = new Date();
+    const nowMins = now.getHours()*60+now.getMinutes();
+    const otMins = Math.max(0, nowMins - OVERTIME_START_HOUR*60);
+    overtime = Math.round((otMins / 60) * HOURLY);
+  }
+  const total = Math.max(0, base - penalty) + overtime;
+  return {base, penalty, penaltyCount, overtime, total};
+}
+
+function calcWeekendSalary(shift) {
+  if (!shift.clockIn) return 0;
+  const inParts = shift.clockIn.split(':');
+  const inMins = parseInt(inParts[0])*60+parseInt(inParts[1]);
+  let outMins;
+  if (shift.clockOut) {
+    const outParts = shift.clockOut.split(':');
+    outMins = parseInt(outParts[0])*60+parseInt(outParts[1]);
+  } else {
+    const now = new Date();
+    outMins = now.getHours()*60+now.getMinutes();
+  }
+  const hours = Math.max(0, outMins - inMins) / 60;
+  return Math.round(hours * HOURLY);
+}
+
+function clockIn() {
+  const date = today();
+  const shift = getOrCreateShift(date);
+  shift.clockIn = nowTime();
+  saveShift(date, shift);
+  renderNanny();
+}
+function clockOut() {
+  const date = today();
+  const shift = getOrCreateShift(date);
+  shift.clockOut = nowTime();
+  const {total} = calcDaySalary(shift);
+  shift.salary = total;
+  saveShift(date, shift);
+  syncToSheets(shift);
+  renderNanny();
+}
+function toggleOvertime(val) {
+  const date = today();
+  const shift = getOrCreateShift(date);
+  shift.overtime = val;
+  saveShift(date, shift);
+  renderNanny();
+}
+
+function nowTime() {
+  const d = new Date();
+  return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+}
+function elapsed(from, to) {
+  const [fh,fm] = from.split(':').map(Number);
+  const [th,tm] = to.split(':').map(Number);
+  const mins = (th*60+tm)-(fh*60+fm);
+  return `${Math.floor(mins/60)}ч ${mins%60}м`;
+}
+
+function startClock() {
+  if (clockInterval) clearInterval(clockInterval);
+  function tick() {
+    const el = document.getElementById('live-clock');
+    if (el) el.textContent = nowTime();
+  }
+  tick();
+  clockInterval = setInterval(tick, 10000);
+}
+
+// ─── HISTORY TAB ──────────────────────────────────────────────────────────────
+function renderHistory() {
+  const el = document.getElementById('tab-history');
+  const shifts = loadData('shifts', {});
+  const dates = Object.keys(shifts).sort().reverse();
+
+  let html = `<div class="card"><div class="card-title">История смен</div>`;
+  if (!dates.length) {
+    html += `<div class="text-muted text-sm" style="padding:20px 0;text-align:center">Нет данных</div>`;
+  } else {
+    html += `<table class="hist-table"><thead><tr><th>Дата</th><th>Приход</th><th>Уход</th><th>Тип</th><th>Штраф</th><th>Итого</th></tr></thead><tbody>`;
+    let monthTotal = 0;
+    dates.forEach(d => {
+      const s = shifts[d];
+      const {penalty, penaltyCount, overtime, total} = calcDaySalary(s);
+      monthTotal += (s.clockOut ? total : 0);
+      const badge = s.weekendMode ? '<span class="badge badge-blue">Выходной</span>' : s.overtime ? '<span class="badge badge-amber">Переработка</span>' : '<span class="badge badge-green">Будни</span>';
+      html += `<tr>
+        <td>${new Date(d).toLocaleDateString('ru-RU',{day:'numeric',month:'short'})}</td>
+        <td>${s.clockIn||'—'}</td>
+        <td>${s.clockOut||'—'}</td>
+        <td>${badge}</td>
+        <td style="color:${penalty>0?'var(--red)':'var(--text2)'}">${penalty>0?'−'+penalty+'₸':'—'}</td>
+        <td style="font-family:'JetBrains Mono',monospace;font-weight:500">${s.clockOut?total+'₸':'в процессе'}</td>
+      </tr>`;
+    });
+    html += `</tbody></table>`;
+    html += `<div class="salary-total mt-16"><span class="salary-total-label">Итого за период</span><span class="salary-total-value">${monthTotal} ₸</span></div>`;
+  }
+  html += `</div>`;
+
+  if (currentRole === 'owner') {
+    html += `<div style="text-align:right;margin-top:8px"><button class="btn btn-danger btn-sm" onclick="if(confirm('Очистить всю историю?')){localStorage.clear();renderHistory()}">🗑 Очистить историю</button></div>`;
+  }
+
+  el.innerHTML = html;
+}
+
+// ─── SETTINGS TAB ─────────────────────────────────────────────────────────────
+function renderSettings() {
+  const el = document.getElementById('tab-settings');
+  const cfg = loadData('cfg', {sheetsUrl:'', sheetsKey:''});
+
+  el.innerHTML = `
+    <div class="card">
+      <div class="card-title">Синхронизация Google Sheets</div>
+      <div class="text-sm text-muted mb-8">Вставьте URL вашего Google Apps Script Web App для записи данных в таблицу.</div>
+      <div class="sync-row">
+        <input class="sync-input" id="sheets-url" placeholder="https://script.google.com/macros/s/..." value="${cfg.sheetsUrl||''}" />
+        <button class="btn btn-primary btn-sm" onclick="saveSheetsUrl()">Сохранить</button>
+      </div>
+      <div class="sync-status" id="sync-status">${cfg.sheetsUrl ? '✓ URL сохранён' : 'Не настроено'}</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Инструкция по Google Apps Script</div>
+      <div style="font-size:0.82rem;line-height:1.8;color:var(--text2)">
+        1. Откройте Google Таблицу → Расширения → Apps Script<br>
+        2. Вставьте скрипт из блока ниже<br>
+        3. Опубликуйте: Развернуть → Новое развертывание → Веб-приложение<br>
+        4. Доступ: "Все" → скопируйте URL и вставьте выше
+      </div>
+      <div style="background:var(--surface2);border-radius:var(--radius);padding:14px;margin-top:12px;font-family:'JetBrains Mono',monospace;font-size:0.72rem;color:var(--text2);white-space:pre-wrap;overflow-x:auto">${getAppsScriptCode()}</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Ручная синхронизация</div>
+      <button class="btn btn-secondary" onclick="syncAllHistory()">↑ Синхронизировать всю историю</button>
+      <div class="sync-status" id="manual-sync-status"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Сброс данных</div>
+      <button class="btn btn-danger btn-sm" onclick="if(confirm('Сбросить ВСЕ данные?')){localStorage.clear();alert('Готово')}">Очистить все данные</button>
+    </div>`;
+}
+
+function saveSheetsUrl() {
+  const url = document.getElementById('sheets-url').value.trim();
+  const cfg = loadData('cfg', {});
+  cfg.sheetsUrl = url;
+  saveData('cfg', cfg);
+  document.getElementById('sync-status').textContent = url ? '✓ URL сохранён' : 'Не настроено';
+  document.getElementById('sync-status').className = 'sync-status' + (url?' ok':'');
+}
+
+function getAppsScriptCode() {
+  return `function doPost(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet()
+              .getSheetByName("Смены") ||
+              SpreadsheetApp.getActiveSpreadsheet()
+              .insertSheet("Смены");
+  var data = JSON.parse(e.postData.contents);
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(["Дата","Приход","Уход","Тип","Штраф","Переработка","Итого"]);
+  }
+  sheet.appendRow([
+    data.date, data.clockIn, data.clockOut,
+    data.weekendMode ? "Выходной" : "Будни",
+    data.penalty, data.overtime, data.total
+  ]);
+  return ContentService
+    .createTextOutput(JSON.stringify({ok:true}))
+    .setMimeType(ContentService.MimeType.JSON);
+}`;
+}
+
+function syncToSheets(shift) {
+  const cfg = loadData('cfg', {});
+  if (!cfg.sheetsUrl) return;
+  const {penalty, overtime, total} = calcDaySalary(shift);
+  fetch(cfg.sheetsUrl, {
+    method:'POST', mode:'no-cors',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({...shift, penalty, overtime, total})
+  }).catch(()=>{});
+}
+
+function syncAllHistory() {
+  const shifts = loadData('shifts', {});
+  const el = document.getElementById('manual-sync-status');
+  el.textContent = 'Отправляем...';
+  el.className = 'sync-status';
+  let count = 0;
+  Object.values(shifts).forEach(s => { if(s.clockOut) { syncToSheets(s); count++; } });
+  setTimeout(()=>{ el.textContent = `✓ Отправлено ${count} записей`; el.className='sync-status ok'; }, 800);
+}
+
+function logout() {
+  if (clockInterval) clearInterval(clockInterval);
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('pin-screen').style.display = 'flex';
+  pinBuffer = ''; updateDots();
+  document.getElementById('pin-error').textContent = '';
+}
+</script>
+</body>
+</html>
