@@ -356,13 +356,17 @@ function calcSalary(shift){
   const cfg2=getCfg();
   const deduct=Math.min(deductCount*cfg2.deductPerTask,cfg2.shiftBase);
   const base=cfg2.shiftBase;
-  // overtime: only if explicitly flagged OR clockOut meaningfully after overtimeStartHour (>15 min buffer)
+  // Overtime: from max(clockIn, 19:00) to clockOut
+  // So if arrived at 22:47 and left 23:49 → only 62 min counted, not from 19:00
   let overtimePay=0;
   if(shift.clockOut && shift.overtime){
     const outM=toMins(shift.clockOut);
     const otStartM=cfg2.overtimeStartHour*60;
-    const otMins=outM-otStartM;
-    if(otMins>15){ // at least 15 min past 19:00 to count
+    const inM=toMins(shift.clockIn||'09:00');
+    // overtime starts at the later of: 19:00 OR clockIn
+    const otFromM=Math.max(otStartM, inM);
+    const otMins=outM-otFromM;
+    if(otMins>15){
       overtimePay=Math.round(otMins/60*hr);
     }
   }
