@@ -189,7 +189,7 @@ select.form-input{cursor:pointer}
     <div id="close-confirm-body"></div>
     <div class="flex gap-8 mt-16">
       <button class="btn btn-secondary btn-sm" onclick="closeModal('close-confirm-modal')">Вернуться</button>
-      <button class="btn btn-danger btn-sm" onclick="confirmClockOut()">Закрыть со вычетом</button>
+      <button class="btn btn-danger btn-sm" id="close-confirm-btn" onclick="confirmClockOut()">Закрыть со вычетом</button>
     </div>
   </div>
 </div>
@@ -665,9 +665,13 @@ function updateClosePreview(){
   });
   const deductAmt=Math.min(withDeduct*cfg.deductPerTask,cfg.shiftBase);
   const preview=document.getElementById('close-deduct-preview');
-  if(preview){
-    if(withDeduct===0) preview.innerHTML=`<span style="color:var(--green)">✓ Вычетов нет — все причины указаны</span>`;
-    else preview.innerHTML=`Вычет составит: <span style="color:var(--red);font-weight:500">−${fmtMoney(deductAmt)}</span> (${withDeduct} задач без причины)`;
+  const btn=document.getElementById('close-confirm-btn');
+  if(withDeduct===0){
+    if(preview) preview.innerHTML=`<span style="color:var(--green)">✓ Вычетов нет — все причины указаны</span>`;
+    if(btn){ btn.textContent='Закрыть смену ✓'; btn.className='btn btn-primary btn-sm'; }
+  } else {
+    if(preview) preview.innerHTML=`Вычет составит: <span style="color:var(--red);font-weight:500">−${fmtMoney(deductAmt)}</span> (${withDeduct} задач без причины)`;
+    if(btn){ btn.textContent='Закрыть со вычетом'; btn.className='btn btn-danger btn-sm'; }
   }
 }
 
@@ -795,31 +799,56 @@ function renderHistory(){
   const el=document.getElementById('tab-history');
   const shifts=load('shifts',{});
   const dates=Object.keys(shifts).filter(d=>shifts[d].clockIn).sort().reverse();
+  const isEmp=currentRole==='employer';
   let html=`<div class="card"><div class="card-title">История смен</div>`;
   if(!dates.length){
     html+=`<div class="text-muted text-sm" style="padding:20px 0;text-align:center">Нет данных</div>`;
   } else {
-    html+=`<table class="hist-table"><thead><tr><th>Дата</th><th>Приход</th><th>Уход</th><th>Тип</th><th>Вычеты</th><th>Итого</th><th></th></tr></thead><tbody>`;
+    html+=`<table class="hist-table"><thead><tr>
+      <th>Дата</th><th>Приход</th><th>Уход</th><th>Тип</th>
+      ${isEmp?'<th>База</th><th>Вычеты</th><th>Переработка</th><th>Премия</th>':'<th>Вычеты</th>'}
+      <th>Итого</th><th></th>
+    </tr></thead><tbody>`;
     dates.forEach(d=>{
       const s=shifts[d];
-      const {deduct,total}=calcSalary(s);
-      const badge=s.weekendMode?'<span class="badge badge-blue">Выходной</span>':s.overtime?'<span class="badge badge-amber">Переработка</span>':'<span class="badge badge-green">Будни</span>';
-      const editMark=s.edited?(s.editedBy==='nanny'
-        ?`<span class="badge badge-blue" style="margin-left:4px" title="Правка няни: ${s.nannyEditReason||''}">✎ няня</span>`
-        :`<span class="badge badge-gray" style="margin-left:4px">✎</span>`)
+      const r=calcSalary(s);
+      const badge=s.weekendMode
+        ?'<span class="badge badge-blue">Выходной</span>'
+        :s.overtime?'<span class="badge badge-amber">Переработка</span>'
+        :'<span class="badge badge-green">Будни</span>';
+      const editMark=s.edited
+        ?(s.editedBy==='nanny'
+          ?`<span class="badge badge-blue" style="margin-left:4px" title="Правка няни: ${s.nannyEditReason||''}">✎ няня</span>`
+          :`<span class="badge badge-gray" style="margin-left:4px">✎</span>`)
         :'';
-      const editBtn=currentRole==='employer'
+      const editBtn=isEmp
         ?`<button class="btn btn-ghost btn-sm" onclick="openEditModal('${d}')">✎</button>`
         :`<button class="btn btn-ghost btn-sm" onclick="openNannyEdit('${d}')">✎</button>`;
-      html+=`<tr>
-        <td>${fmtDate(d)}${editMark}</td>
-        <td>${s.clockIn||'—'}</td>
-        <td>${s.clockOut||'<span style="color:var(--text3)">в процессе</span>'}</td>
-        <td>${badge}</td>
-        <td style="color:${deduct>0?'var(--red)':'var(--text2)'}">${deduct>0?'−'+fmtMoney(deduct):'—'}</td>
-        <td class="text-mono" style="font-weight:500">${s.clockOut?fmtMoney(total):'—'}</td>
-        <td>${editBtn}</td>
-      </tr>`;
+
+      if(isEmp){
+        html+=`<tr style="cursor:default">
+          <td>${fmtDate(d)}${editMark}</td>
+          <td>${s.clockIn||'—'}</td>
+          <td>${s.clockOut||'<span style="color:var(--text3)">в процессе</span>'}</td>
+          <td>${badge}</td>
+          <td>${r.base>0?fmtMoney(r.base):'—'}</td>
+          <td style="color:${r.deduct>0?'var(--red)':'var(--text2)'}">${r.deduct>0?'−'+fmtMoney(r.deduct):'—'}</td>
+          <td style="color:${r.overtimePay>0?'var(--accent)':'var(--text2)'}">${r.overtimePay>0?'+'+fmtMoney(r.overtimePay):'—'}</td>
+          <td style="color:${r.bonus>0?'var(--green)':'var(--text2)'}">${r.bonus>0?'+'+fmtMoney(r.bonus):'—'}</td>
+          <td class="text-mono" style="font-weight:500;color:var(--accent)">${s.clockOut?fmtMoney(r.total):'—'}</td>
+          <td>${editBtn}</td>
+        </tr>`;
+      } else {
+        html+=`<tr>
+          <td>${fmtDate(d)}${editMark}</td>
+          <td>${s.clockIn||'—'}</td>
+          <td>${s.clockOut||'<span style="color:var(--text3)">в процессе</span>'}</td>
+          <td>${badge}</td>
+          <td style="color:${r.deduct>0?'var(--red)':'var(--text2)'}">${r.deduct>0?'−'+fmtMoney(r.deduct):'—'}</td>
+          <td class="text-mono" style="font-weight:500">${s.clockOut?fmtMoney(r.total):'—'}</td>
+          <td>${editBtn}</td>
+        </tr>`;
+      }
     });
     html+=`</tbody></table>`;
   }
@@ -979,18 +1008,25 @@ function renderSalaryTab(){
     </div>`;
 
   if(filtered.length){
-    html+=`<div class="card"><div class="card-title">Детализация</div>
-      <table class="hist-table"><thead><tr><th>Дата</th><th>Тип</th><th>База</th><th>Вычеты</th><th>Переработка</th><th>Премия</th><th>Итого</th></tr></thead><tbody>`;
+    html+=`<div class="card"><div class="card-title">Детализация по дням</div>
+      <table class="hist-table"><thead><tr>
+        <th>Дата</th><th>Приход</th><th>Уход</th><th>Тип</th>
+        <th>База</th><th>Вычеты</th><th>Переработка</th><th>Премия</th>
+        <th style="color:var(--accent)">Итого</th>
+      </tr></thead><tbody>`;
     filtered.sort((a,b)=>a.date>b.date?1:-1).forEach(s=>{
       const r=calcSalary(s);
+      const type=s.weekendMode?'<span class="badge badge-blue">Выходной</span>':r.overtimePay>0?'<span class="badge badge-amber">Переработка</span>':'<span class="badge badge-green">Будни</span>';
       html+=`<tr>
         <td>${fmtDate(s.date)}${s.edited?'<span class="badge badge-gray" style="margin-left:4px">✎</span>':''}</td>
-        <td>${s.weekendMode?'Выход.':r.overtimePay>0?'Перераб.':'Будни'}</td>
-        <td>${fmtMoney(r.base)}</td>
+        <td>${s.clockIn||'—'}</td>
+        <td>${s.clockOut||'—'}</td>
+        <td>${type}</td>
+        <td>${r.base>0?fmtMoney(r.base):'—'}</td>
         <td style="color:${r.deduct>0?'var(--red)':'var(--text2)'}">${r.deduct>0?'−'+fmtMoney(r.deduct):'—'}</td>
         <td style="color:${r.overtimePay>0?'var(--accent)':'var(--text2)'}">${r.overtimePay>0?'+'+fmtMoney(r.overtimePay):'—'}</td>
         <td style="color:${r.bonus>0?'var(--green)':'var(--text2)'}">${r.bonus>0?'+'+fmtMoney(r.bonus):'—'}</td>
-        <td class="text-mono" style="font-weight:500">${fmtMoney(r.total)}</td>
+        <td class="text-mono" style="font-weight:500;color:var(--accent)">${fmtMoney(r.total)}</td>
       </tr>`;
     });
     html+=`</tbody></table></div>`;
