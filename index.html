@@ -325,11 +325,15 @@ function getTasks(){ return lsGet('tasks',DEFAULT_TASKS); }
 function getCfg(){ return {...DEFAULT_CFG,...lsGet('cfg',{})}; }
 function getShift(date){ return (lsGet('shifts',{}))[date]||null; }
 
-function saveShift(date,shift){
-  // 1. Update local cache immediately (fast UI)
+// Save to local cache only (fast, for checklist ticks)
+function saveShiftLocal(date,shift){
   const all=lsGet('shifts',{}); all[date]=shift; lsSet('shifts',all);
-  // 2. Push to Sheets in background
-  sheetsRequest({action:'saveShift',date,shift:JSON.stringify(shift)});
+}
+
+// Save to local cache AND push to Sheets (for clockIn, clockOut, edits)
+function saveShift(date,shift){
+  const all=lsGet('shifts',{}); all[date]=shift; lsSet('shifts',all);
+  sheetsWrite({action:'saveShift', date:date, shift:JSON.stringify(shift)});
 }
 
 function getOrCreate(date){
@@ -338,7 +342,6 @@ function getOrCreate(date){
     const dow=dowOfDate(date);
     s={date,clockIn:null,clockOut:null,tasks:{},comments:{},overtime:false,
        weekendMode:(dow===0||dow===6),salary:0,edited:false,editedAt:null,bonus:0};
-    // Don't save to Sheets yet — only when clockIn happens
     const all=lsGet('shifts',{}); all[date]=s; lsSet('shifts',all);
   }
   return s;
@@ -709,18 +712,17 @@ function toggleTask(taskId){
   const cur=shift.tasks[taskId];
   if(!cur){
     shift.tasks[taskId]=true;
-    saveShift(activeShiftDate,shift);
+    saveShiftLocal(activeShiftDate,shift);
     renderNanny();
   } else if(cur===true){
     shift.tasks[taskId]='na';
-    saveShift(activeShiftDate,shift);
+    saveShiftLocal(activeShiftDate,shift);
     renderNanny();
-    // open modal AFTER render so it's visible on top
     openCommentModal(taskId);
   } else {
     delete shift.tasks[taskId];
     delete shift.comments[taskId];
-    saveShift(activeShiftDate,shift);
+    saveShiftLocal(activeShiftDate,shift);
     renderNanny();
   }
 }
@@ -736,7 +738,7 @@ function saveComment(){
   if(!txt){ document.getElementById('modal-comment-err').style.display='block'; return; }
   const shift=getOrCreate(pendingCommentDate);
   shift.comments[pendingCommentTaskId]=txt;
-  saveShift(pendingCommentDate,shift);
+  saveShiftLocal(pendingCommentDate,shift);
   closeModal('comment-modal');
   renderNanny();
 }
@@ -843,7 +845,6 @@ function confirmClockOut(){
   const {total}=calcSalary(shift);
   shift.salary=total;
   saveShift(activeShiftDate,shift);
-  syncToSheets(shift);
   renderNanny();
 }
 
@@ -865,7 +866,6 @@ function startClock(){
         const {total}=calcSalary(shift);
         shift.salary=total;
         saveShift(activeShiftDate,shift);
-        syncToSheets(shift);
         // show notification
         if('Notification' in window && Notification.permission==='granted'){
           new Notification('Смена закрыта автоматически', {body:'Смена закрыта в 23:59. Завтра откройте новую смену.'});
@@ -968,7 +968,6 @@ function saveNannyEdit(){
   const {total}=calcSalary(shift);
   shift.salary=total;
   saveShift(date,shift);
-  syncToSheets(shift);
   closeModal('nanny-edit-modal');
   // Make sure we show the correct date after edit
   activeShiftDate=date;
@@ -1161,7 +1160,6 @@ function finalizeEdit(date){
   const {total}=calcSalary(s);
   s.salary=total;
   saveShift(date,s);
-  syncToSheets(s);
   closeModal('edit-modal');
   renderHistory();
 }
@@ -1515,7 +1513,6 @@ function saveNewTask(){
 
 // ─── SYNC ─────────────────────────────────────────────────────────────────────
 // saveShift already calls sheetsRequest — syncToSheets kept as alias for compatibility
-function syncToSheets(shift){ saveShift(shift.date, shift); }
 
 function syncSettings(){
   sheetsRequest({
