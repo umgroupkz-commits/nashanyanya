@@ -344,84 +344,108 @@ function getOrCreate(date){
   return s;
 }
 
-// Sheets request — uses no-cors fetch for writes, JSONP for reads
-function sheetsRequest(params){
+// ─── GOOGLE SHEETS SYNC ───────────────────────────────────────────────────────
+
+// WRITE: no-cors POST — always works, no response needed
+function sheetsWrite(params){
   const qs=Object.entries(params)
-    .map(([k,v])=>encodeURIComponent(k)+'='+encodeURIComponent(v)).join('&');
-  const url=SHEETS_URL+'?'+qs;
-  // For reads (getAll) use fetch with no-cors won't work for JSON,
-  // so we use a hidden iframe trick for writes and fetch for reads
-  return fetch(url, {
-    method:'GET',
-    mode:'no-cors',
-    redirect:'follow'
-  }).then(()=>({ok:true})).catch(()=>({ok:false}));
+    .map(([k,v])=>encodeURIComponent(k)+'='+encodeURIComponent(String(v))).join('&');
+  // Use image trick for fire-and-forget GET (no-cors, no response)
+  const img=new Image();
+  img.src=SHEETS_URL+'?'+qs+'&_='+Date.now();
 }
 
-// Read-only requests need actual response — use script tag JSONP
-function sheetsRead(params, callback){
-  const cbName='_cb'+Date.now();
+// READ: JSONP — loads via <script> tag, bypasses CORS completely
+function sheetsRead(params, onSuccess, onError){
+  const cbName='_scb'+Date.now()+'_'+Math.random().toString(36).slice(2);
   const qs=Object.entries(params)
-    .map(([k,v])=>encodeURIComponent(k)+'='+encodeURIComponent(v)).join('&');
-  // Apps Script supports ?callback= for JSONP
+    .map(([k,v])=>encodeURIComponent(k)+'='+encodeURIComponent(String(v))).join('&');
+  const url=SHEETS_URL+'?'+qs+'&callback='+cbName;
+
+  let done=false;
   window[cbName]=function(data){
-    delete window[cbName];
-    document.getElementById('_jsonp_'+cbName)&&
-      document.getElementById('_jsonp_'+cbName).remove();
-    callback(null, data);
+    if(done) return; done=true;
+    cleanup();
+    if(data && data.ok) onSuccess(data);
+    else onError(new Error(data&&data.error||'error'));
   };
-  const s=document.createElement('script');
-  s.id='_jsonp_'+cbName;
-  s.onerror=function(){
-    delete window[cbName];
-    s.remove();
-    callback(new Error('load failed'), null);
+  const script=document.createElement('script');
+  script.src=url;
+  script.onerror=function(){
+    if(done) return; done=true;
+    cleanup();
+    onError(new Error('script load failed'));
   };
-  s.src=SHEETS_URL+'?'+qs+'&callback='+cbName;
-  document.head.appendChild(s);
-  // Timeout after 10s
-  setTimeout(()=>{
-    if(window[cbName]){
-      delete window[cbName];
-      s.remove();
-      callback(new Error('timeout'), null);
-    }
-  }, 10000);
+  document.head.appendChild(script);
+
+  const timer=setTimeout(function(){
+    if(done) return; done=true;
+    cleanup();
+    onError(new Error('timeout'));
+  }, 15000);
+
+  function cleanup(){
+    clearTimeout(timer);
+    delete window[cbName];
+    if(script.parentNode) script.parentNode.removeChild(script);
+  }
 }
 
-// Load ALL data from Sheets
+// Save shift: update local cache instantly + write to Sheets in background
+function saveShift(date, shift){
+  const all=lsGet('shifts',{}); all[date]=shift; lsSet('shifts',all);
+  sheetsWrite({action:'saveShift', date:date, shift:JSON.stringify(shift)});
+}
+
+// Load ALL from Sheets on app start
 function loadAllFromSheets(onDone){
-  showSyncStatus('Загружаем данные...');
-  sheetsRead({action:'getAll'}, function(err, res){
-    if(!err && res && res.ok && res.data){
+  showSyncStatus('⏳ Загружаем данные...');
+  sheetsRead(
+    {action:'getAll'},
+    function(res){
       const d=res.data;
-      if(d.shifts)  lsSet('shifts', d.shifts);
-      if(d.cfg)     lsSet('cfg',    d.cfg);
+      if(d.shifts && Object.keys(d.shifts).length) lsSet('shifts', d.shifts);
+      if(d.cfg)   lsSet('cfg',   d.cfg);
       if(d.tasks && d.tasks.length) lsSet('tasks', d.tasks);
       showSyncStatus('');
-    } else {
-      showSyncStatus('⚠ Нет связи — работаем офлайн');
-      setTimeout(()=>showSyncStatus(''), 4000);
+      onDone();
+    },
+    function(err){
+      console.warn('Sheets load failed:', err.message);
+      showSyncStatus('⚠ Офлайн режим');
+      setTimeout(()=>showSyncStatus(''), 3000);
+      onDone();
     }
-    onDone();
-  });
+  );
 }
 
-function showSyncStatus(msg){
-  let el=document.getElementById('sync-status-bar');
-  if(!el) return;
-  el.textContent=msg;
-  el.style.display=msg?'block':'none';
-}
-
-// Settings sync
 function syncSettings(){
-  sheetsRequest({
+  sheetsWrite({
     action:'saveSettings',
     cfg:JSON.stringify(getCfg()),
     tasks:JSON.stringify(getTasks())
   });
 }
+
+// Manual full refresh from Sheets
+function syncAll(){
+  const msg=document.getElementById('sync-msg');
+  if(msg){ msg.textContent='Загружаем из таблицы...'; msg.style.color='var(--text2)'; }
+  loadAllFromSheets(()=>{
+    if(msg){ msg.textContent='✓ Данные обновлены'; msg.style.color='var(--green)'; }
+    renderHistory();
+  });
+}
+
+function showSyncStatus(msg){
+  const el=document.getElementById('sync-status-bar');
+  if(!el) return;
+  el.textContent=msg;
+  el.style.display=msg?'block':'none';
+}
+
+// Alias kept for compatibility
+function syncToSheets(shift){ saveShift(shift.date, shift); }
 
 function fmtDate(d){ return new Date(d+'T12:00:00').toLocaleDateString('ru-RU',{day:'numeric',month:'short',weekday:'short'}); }
 function fmtMoney(n){ return Number(n||0).toLocaleString('ru-RU')+'₸'; }
