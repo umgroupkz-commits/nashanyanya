@@ -726,8 +726,10 @@ function confirmClockOut(){
   shift.clockOut=t;
   if(!shift.weekendMode){
     const cfg=getCfg();
-    const otMins=toMins(t)-cfg.overtimeStartHour*60;
-    shift.overtime=otMins>15;
+    const outM=toMins(t);
+    const inM=toMins(shift.clockIn||'09:00');
+    const otFromM=Math.max(cfg.overtimeStartHour*60, inM);
+    shift.overtime=(outM-otFromM)>15;
   }
   const {total}=calcSalary(shift);
   shift.salary=total;
@@ -738,8 +740,37 @@ function confirmClockOut(){
 
 function startClock(){
   if(clockInterval) clearInterval(clockInterval);
-  function tick(){ const e=document.getElementById('live-clock'); if(e) e.textContent=nowTime(); }
-  tick(); clockInterval=setInterval(tick,10000);
+  function tick(){
+    const e=document.getElementById('live-clock');
+    if(e) e.textContent=nowTime();
+    // Auto-close shift at midnight
+    const now=new Date();
+    if(now.getHours()===0 && now.getMinutes()===0){
+      const shift=getShift(activeShiftDate);
+      if(shift && shift.clockIn && !shift.clockOut){
+        shift.clockOut='23:59';
+        const cfg=getCfg();
+        const inM=toMins(shift.clockIn);
+        const otFromM=Math.max(cfg.overtimeStartHour*60, inM);
+        shift.overtime=(toMins('23:59')-otFromM)>15;
+        const {total}=calcSalary(shift);
+        shift.salary=total;
+        saveShift(activeShiftDate,shift);
+        syncToSheets(shift);
+        // show notification
+        if('Notification' in window && Notification.permission==='granted'){
+          new Notification('Смена закрыта автоматически', {body:'Смена закрыта в 23:59. Завтра откройте новую смену.'});
+        }
+        renderNanny();
+      }
+    }
+  }
+  tick();
+  clockInterval=setInterval(tick,30000); // check every 30 sec
+  // Request notification permission for midnight alert
+  if('Notification' in window && Notification.permission==='default'){
+    Notification.requestPermission();
+  }
 }
 
 // ─── NANNY SELF-EDIT ──────────────────────────────────────────────────────────
@@ -790,13 +821,20 @@ function saveNannyEdit(){
   const shift=getOrCreate(date);
   const tasks=getTasks().filter(t=>taskActiveOnDate(t,date));
 
-  shift.clockIn=document.getElementById('ne-clockin').value||shift.clockIn;
-  shift.clockOut=document.getElementById('ne-clockout').value||shift.clockOut;
+  // Save time fields — always take field value if it's a valid HH:MM
+  const newIn=document.getElementById('ne-clockin').value;
+  const newOut=document.getElementById('ne-clockout').value;
+  if(newIn) shift.clockIn=newIn;
+  if(newOut) shift.clockOut=newOut;
 
-  // re-check overtime with updated clockOut
-  if(!shift.weekendMode&&shift.clockOut){
+  // Re-check overtime with corrected logic: from max(clockIn, 19:00) to clockOut
+  if(!shift.weekendMode && shift.clockOut && shift.clockIn){
     const cfg=getCfg();
-    const otMins=toMins(shift.clockOut)-cfg.overtimeStartHour*60;
+    const outM=toMins(shift.clockOut);
+    const otStartM=cfg.overtimeStartHour*60;
+    const inM=toMins(shift.clockIn);
+    const otFromM=Math.max(otStartM, inM);
+    const otMins=outM-otFromM;
     shift.overtime=otMins>15;
   }
 
