@@ -404,7 +404,16 @@ function launchApp(){
   badge.className='status-badge '+(currentRole==='nanny'?'work':'ot');
   activeShiftDate=today();
   buildTabs();
-  showTab(currentRole==='nanny'?'nanny':'history');
+  // Show loading state, then load settings from Sheets
+  const firstTab=currentRole==='nanny'?'nanny':'history';
+  const tabEl=document.getElementById('tab-'+firstTab);
+  if(tabEl) tabEl.innerHTML=`<div style="padding:40px;text-align:center;color:var(--text3)">Загрузка настроек...</div>`;
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  const activeBtn=document.getElementById('tab-btn-'+firstTab);
+  if(activeBtn) activeBtn.classList.add('active');
+  loadSettingsFromSheets(()=>{
+    showTab(firstTab);
+  });
 }
 function buildTabs(){
   const tabs=document.getElementById('tabs-row');
@@ -1164,9 +1173,9 @@ function sRow(label,key,val){
   return `<div class="settings-row"><div><div style="font-size:0.9rem">${label}</div></div>
     <input class="settings-input" type="number" value="${val}" onchange="saveCfg('${key}',Number(this.value))"></div>`;
 }
-function saveCfg(key,val){ const c=getCfg(); c[key]=val; save('cfg',c); renderSettings(); }
-function updateTaskLabel(i,val){ const t=getTasks(); t[i].label=val; save('tasks',t); }
-function deleteTask(i){ if(!confirm('Удалить задачу?'))return; const t=getTasks(); t.splice(i,1); save('tasks',t); renderSettings(); }
+function saveCfg(key,val){ const c=getCfg(); c[key]=val; save('cfg',c); syncSettings(); renderSettings(); }
+function updateTaskLabel(i,val){ const t=getTasks(); t[i].label=val; save('tasks',t); syncSettings(); }
+function deleteTask(i){ if(!confirm('Удалить задачу?'))return; const t=getTasks(); t.splice(i,1); save('tasks',t); syncSettings(); renderSettings(); }
 
 function openAddTask(isOnce){
   document.getElementById('addtask-title').textContent=isOnce?'Разовая задача':'Добавить задачу';
@@ -1201,15 +1210,17 @@ function saveNewTask(){
   const t=getTasks();
   t.push({id:'custom_'+Date.now(),label,sub,freq,onceDate});
   save('tasks',t);
+  syncSettings();
   closeModal('addtask-modal');
   renderSettings();
 }
 
 // ─── SYNC ─────────────────────────────────────────────────────────────────────
+// Sends shift data to Sheets
 function syncToSheets(shift){
   const {deduct,overtimePay,bonus,total}=calcSalary(shift);
-  const nannyReason=shift.nannyEditReason||'';
   const params=new URLSearchParams({
+    action:'shift',
     date:shift.date||'',
     clockIn:shift.clockIn||'',
     clockOut:shift.clockOut||'',
@@ -1219,20 +1230,48 @@ function syncToSheets(shift){
     bonus:String(bonus),
     total:String(total),
     edited:shift.edited?'да':'нет',
-    editReason:nannyReason
+    editReason:shift.nannyEditReason||''
   });
-  // Use an image request — bypasses CORS for GET to Apps Script
+  pingSheets(params.toString());
+}
+
+// Saves cfg+tasks to Sheets (called on every settings change)
+function syncSettings(){
+  const params=new URLSearchParams({
+    action:'settings',
+    cfg:JSON.stringify(getCfg()),
+    tasks:JSON.stringify(getTasks())
+  });
+  pingSheets(params.toString());
+}
+
+// Image-ping trick — bypasses CORS for GET requests to Apps Script
+function pingSheets(qs){
   const img=new Image();
-  img.src=SHEETS_URL+'?'+params.toString();
+  img.src=SHEETS_URL+'?'+qs;
+}
+
+// Load settings from Sheets on startup — fetch via script redirect
+function loadSettingsFromSheets(callback){
+  const url=SHEETS_URL+'?action=getSettings';
+  fetch(url)
+    .then(r=>r.json())
+    .then(data=>{
+      if(data.cfg){ save('cfg',data.cfg); }
+      if(data.tasks && data.tasks.length){ save('tasks',data.tasks); }
+      callback();
+    })
+    .catch(()=>{ callback(); }); // on error just proceed with localStorage
 }
 
 function syncAll(){
   const shifts=load('shifts',{});
   let count=0;
   Object.values(shifts).forEach(s=>{ if(s.clockOut){ syncToSheets(s); count++; } });
+  syncSettings();
   const msg=document.getElementById('sync-msg');
   if(msg){
-    msg.textContent='Отправляем '+count+' записей...';
+    msg.textContent='Отправляем '+count+' смен + настройки...';
     msg.style.color='var(--text2)';
     setTimeout(()=>{ msg.textContent='✓ Готово — проверьте таблицу'; msg.style.color='var(--green)'; },2000);
   }
