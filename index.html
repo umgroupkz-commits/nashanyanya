@@ -423,7 +423,7 @@ function buildTabs(){
   const tabs=document.getElementById('tabs-row');
   const list=currentRole==='employer'
     ?[{id:'history',label:'История'},{id:'salary',label:'Зарплата'},{id:'settings',label:'Настройки'}]
-    :[{id:'nanny',label:'Смена'},{id:'history',label:'История'}];
+    :[{id:'nanny',label:'Смена'},{id:'history',label:'История'},{id:'salary',label:'Зарплата'}];
   tabs.innerHTML=list.map(t=>`<button class="tab-btn" id="tab-btn-${t.id}" onclick="showTab('${t.id}')">${t.label}</button>`).join('');
 }
 function showTab(id){
@@ -861,7 +861,15 @@ function saveNannyEdit(){
   saveShift(date,shift);
   syncToSheets(shift);
   closeModal('nanny-edit-modal');
-  renderNanny();
+  // Make sure we show the correct date after edit
+  activeShiftDate=date;
+  // If edited from history tab — stay on history, otherwise re-render nanny
+  const histTab=document.getElementById('tab-history');
+  if(histTab && histTab.style.display!=='none'){
+    renderHistory();
+  } else {
+    renderNanny();
+  }
 }
 
 // ─── HISTORY TAB ──────────────────────────────────────────────────────────────
@@ -1022,6 +1030,15 @@ function deleteShift(date){
 // ─── SALARY TAB ───────────────────────────────────────────────────────────────
 function renderSalaryTab(){
   const el=document.getElementById('tab-salary');
+  const isEmp=currentRole==='employer';
+
+  // Worker view — show their month earnings + rules
+  if(!isEmp){
+    renderSalaryWorker(el);
+    return;
+  }
+
+  // Employer view
   const shifts=load('shifts',{});
   const now=new Date();
   const curYM=`${now.getFullYear()}-${pad(now.getMonth()+1)}`;
@@ -1103,6 +1120,94 @@ function renderSalaryTab(){
 
 function saveSelMonth(v){ save('selMonth',v); renderSalaryTab(); }
 function saveMonthBonus(m,v){ const mb=load('monthBonus',{}); mb[m]=v; save('monthBonus',mb); renderSalaryTab(); }
+
+function renderSalaryWorker(el){
+  const shifts=load('shifts',{});
+  const now=new Date();
+  const curYM=`${now.getFullYear()}-${pad(now.getMonth()+1)}`;
+  const cfg=getCfg();
+  const hr=cfg.hourlyRate;
+
+  const filtered=Object.values(shifts).filter(s=>s.date&&s.date.startsWith(curYM)&&s.clockIn&&s.clockOut);
+  let wdCount=0,weCount=0,otCount=0,totBase=0,totDeduct=0,totOT=0,totBonus=0,totAll=0;
+  filtered.forEach(s=>{
+    const r=calcSalary(s);
+    if(s.weekendMode) weCount++; else wdCount++;
+    if(r.overtimePay>0) otCount++;
+    totBase+=r.base; totDeduct+=r.deduct; totOT+=r.overtimePay; totBonus+=r.bonus; totAll+=r.total;
+  });
+  const mb=load('monthBonus',{})[curYM]||0;
+  const grand=totAll+mb;
+
+  // Today's open shift estimate
+  const todayShift=getShift(today());
+  let todayEst='';
+  if(todayShift&&todayShift.clockIn&&!todayShift.clockOut){
+    const r=calcSalary({...todayShift,clockOut:nowTime()});
+    todayEst=`<div class="edited-notice" style="margin-bottom:14px">📍 Текущая смена (в процессе): ~${fmtMoney(r.total)}</div>`;
+  }
+
+  let html=`${todayEst}
+  <div class="salary-total mb-16">
+    <span class="salary-total-label">Заработано за ${curYM}</span>
+    <span class="salary-total-value">${fmtMoney(grand)}</span>
+  </div>
+  <div class="card">
+    <div class="card-title">Детали за месяц</div>
+    <div class="salary-grid mb-8">
+      <div class="salary-item"><div class="salary-item-label">Будних смен</div><div class="salary-item-value">${wdCount}</div></div>
+      <div class="salary-item"><div class="salary-item-label">Выходных смен</div><div class="salary-item-value">${weCount}</div></div>
+      <div class="salary-item"><div class="salary-item-label">С переработкой</div><div class="salary-item-value">${otCount}</div></div>
+      <div class="salary-item"><div class="salary-item-label">Всего смен</div><div class="salary-item-value">${filtered.length}</div></div>
+    </div>
+    <div class="shift-card-row"><span class="shift-card-row-label">База (будни)</span><span>${fmtMoney(totBase)}</span></div>
+    ${totDeduct>0?`<div class="shift-card-row"><span class="shift-card-row-label">Вычеты</span><span style="color:var(--red)">−${fmtMoney(totDeduct)}</span></div>`:''}
+    ${totOT>0?`<div class="shift-card-row"><span class="shift-card-row-label">Переработка</span><span style="color:var(--accent)">+${fmtMoney(totOT)}</span></div>`:''}
+    ${totBonus>0?`<div class="shift-card-row"><span class="shift-card-row-label">Премии</span><span style="color:var(--green)">+${fmtMoney(totBonus)}</span></div>`:''}
+    ${mb>0?`<div class="shift-card-row"><span class="shift-card-row-label">Разовая премия</span><span style="color:var(--green)">+${fmtMoney(mb)}</span></div>`:''}
+  </div>`;
+
+  // Per-day breakdown
+  if(filtered.length){
+    html+=`<div class="card"><div class="card-title">По дням</div>`;
+    filtered.sort((a,b)=>a.date>b.date?-1:1).forEach(s=>{
+      const r=calcSalary(s);
+      const typeBadge=s.weekendMode?'<span class="badge badge-blue">Выходной</span>':r.overtimePay>0?'<span class="badge badge-amber">Переработка</span>':'<span class="badge badge-green">Будни</span>';
+      html+=`<div class="shift-card" style="margin-bottom:8px">
+        <div class="shift-card-header">
+          <div><div class="shift-card-date">${fmtDate(s.date)}</div><div style="margin-top:4px">${typeBadge} <span style="font-size:0.78rem;color:var(--text3)">${s.clockIn}→${s.clockOut}</span></div></div>
+          <div class="shift-card-total">${fmtMoney(r.total)}</div>
+        </div>
+        ${r.base>0?`<div class="shift-card-row"><span class="shift-card-row-label">База</span><span>${fmtMoney(r.base)}</span></div>`:''}
+        ${r.deduct>0?`<div class="shift-card-row"><span class="shift-card-row-label">Вычеты</span><span style="color:var(--red)">−${fmtMoney(r.deduct)}</span></div>`:''}
+        ${r.overtimePay>0?`<div class="shift-card-row"><span class="shift-card-row-label">Переработка</span><span style="color:var(--accent)">+${fmtMoney(r.overtimePay)}</span></div>`:''}
+        ${r.bonus>0?`<div class="shift-card-row"><span class="shift-card-row-label">Премия</span><span style="color:var(--green)">+${fmtMoney(r.bonus)}</span></div>`:''}
+      </div>`;
+    });
+    html+=`</div>`;
+  }
+
+  // Rules reference
+  html+=`<div class="card">
+    <div class="card-title">Как начисляется зарплата</div>
+    <div class="shift-card-row"><span class="shift-card-row-label">Ставка за смену (будни)</span><span>${fmtMoney(cfg.shiftBase)}</span></div>
+    <div class="shift-card-row"><span class="shift-card-row-label">Вычет за невыполненный пункт</span><span style="color:var(--red)">−${fmtMoney(cfg.deductPerTask)}</span></div>
+    <div class="shift-card-row"><span class="shift-card-row-label">Ставка в час (переработка/выходные)</span><span style="color:var(--accent)">${fmtMoney(hr)}/час</span></div>
+    <div class="shift-card-row"><span class="shift-card-row-label">Переработка начинается с</span><span>${cfg.overtimeStartHour}:00</span></div>
+    <div style="margin-top:12px;font-size:0.8rem;color:var(--text2);line-height:1.7;background:var(--surface2);border-radius:var(--radius);padding:12px">
+      📌 <strong style="color:var(--text)">Важные правила:</strong><br>
+      • Если все задачи выполнены — ставка ${fmtMoney(cfg.shiftBase)} полностью<br>
+      • За каждый невыполненный пункт без причины — вычет ${fmtMoney(cfg.deductPerTask)} (но не ниже 0)<br>
+      • Если указали причину — вычета нет<br>
+      • Переработка считается с ${cfg.overtimeStartHour}:00 по ${fmtMoney(hr)}/час<br>
+      • Если пришли после ${cfg.overtimeStartHour}:00 — переработка с момента прихода<br>
+      • Выходные (сб/вс) — оплата с момента прихода по ${fmtMoney(hr)}/час<br>
+      • Смена автоматически закрывается в 23:59 — новый день = новая смена
+    </div>
+  </div>`;
+
+  el.innerHTML=html;
+}
 
 function showReceipt(selMonth){
   const shifts=load('shifts',{});
