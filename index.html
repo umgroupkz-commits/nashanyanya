@@ -543,10 +543,30 @@ function showTab(id){
     const e=document.getElementById('tab-'+t); if(e) e.style.display=t===id?'block':'none';
     const b=document.getElementById('tab-btn-'+t); if(b) b.classList.toggle('active',t===id);
   });
-  if(id==='nanny') renderNanny();
-  if(id==='history') renderHistory();
-  if(id==='salary') renderSalaryTab();
+  if(id==='nanny')    renderNanny();
   if(id==='settings') renderSettings();
+  // History and salary always reload from Sheets first
+  if(id==='history' || id==='salary'){
+    const el=document.getElementById('tab-'+id);
+    if(el) el.innerHTML=`<div style="padding:40px;text-align:center;color:var(--text3)">⏳ Загружаем...</div>`;
+    sheetsRead(
+      {action:'getAll'},
+      function(res){
+        if(res&&res.data){
+          if(res.data.shifts&&Object.keys(res.data.shifts).length) lsSet('shifts',res.data.shifts);
+          if(res.data.cfg)   lsSet('cfg',   res.data.cfg);
+          if(res.data.tasks&&res.data.tasks.length) lsSet('tasks',res.data.tasks);
+        }
+        if(id==='history') renderHistory();
+        if(id==='salary')  renderSalaryTab();
+      },
+      function(){
+        // Offline — render from cache
+        if(id==='history') renderHistory();
+        if(id==='salary')  renderSalaryTab();
+      }
+    );
+  }
 }
 function logout(){
   if(clockInterval) clearInterval(clockInterval);
