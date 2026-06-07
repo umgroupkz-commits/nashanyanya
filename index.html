@@ -226,6 +226,25 @@ select.form-input{cursor:pointer}
   </div>
 </div>
 
+<!-- Nanny self-edit modal -->
+<div class="modal-overlay" id="nanny-edit-modal">
+  <div class="modal" style="max-width:500px">
+    <button class="modal-close" onclick="closeModal('nanny-edit-modal')">✕</button>
+    <div class="modal-title">Редактировать запись</div>
+    <div class="warn-notice" style="margin-bottom:14px">⚠ Работодатель увидит факт редактирования, время и причину.</div>
+    <div class="form-row">
+      <label class="form-label">Причина редактирования <span style="color:var(--red)">*</span></label>
+      <input class="form-input" id="nanny-edit-reason" placeholder="Например: забыла отметить приход вовремя">
+      <div style="color:var(--red);font-size:0.72rem;margin-top:4px;display:none" id="nanny-edit-reason-err">Укажите причину</div>
+    </div>
+    <div id="nanny-edit-body"></div>
+    <div class="flex gap-8 mt-16">
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('nanny-edit-modal')">Отмена</button>
+      <button class="btn btn-primary btn-sm" onclick="saveNannyEdit()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
 <!-- Receipt modal -->
 <div class="modal-overlay" id="receipt-modal">
   <div class="modal" style="max-width:540px">
@@ -318,13 +337,13 @@ function calcSalary(shift){
   const cfg2=getCfg();
   const deduct=Math.min(deductCount*cfg2.deductPerTask,cfg2.shiftBase);
   const base=cfg2.shiftBase;
-  // overtime: auto-calculate if clockOut after overtimeStartHour
+  // overtime: only if explicitly flagged OR clockOut meaningfully after overtimeStartHour (>15 min buffer)
   let overtimePay=0;
-  if(shift.clockOut){
+  if(shift.clockOut && shift.overtime){
     const outM=toMins(shift.clockOut);
     const otStartM=cfg2.overtimeStartHour*60;
-    if(outM>otStartM){
-      const otMins=outM-otStartM;
+    const otMins=outM-otStartM;
+    if(otMins>15){ // at least 15 min past 19:00 to count
       overtimePay=Math.round(otMins/60*hr);
     }
   }
@@ -455,6 +474,7 @@ function renderWeekend(el,shift,readonly){
 function renderWeekday(el,shift,readonly){
   const cfg=getCfg();
   const date=activeShiftDate;
+  const isNanny=currentRole==='nanny';
   const activeTasks=getTasks().filter(t=>taskActiveOnDate(t,date));
   const allDone=activeTasks.every(t=>shift.tasks[t.id]===true||shift.tasks[t.id]==='na');
 
@@ -464,17 +484,23 @@ function renderWeekday(el,shift,readonly){
     if(!readonly) cc.innerHTML+=`<button class="btn btn-primary" onclick="clockIn()">▶ Отметить приход</button>`;
     else cc.innerHTML+=`<div class="text-muted text-sm">Смена не начата</div>`;
   } else {
-    const otInfo=shift.clockOut&&toMins(shift.clockOut)>cfg.overtimeStartHour*60
+    const otInfo=shift.clockOut&&shift.overtime
       ?`<span class="status-badge ot"><span class="status-dot"></span>Переработка с ${cfg.overtimeStartHour}:00</span>`:
-      allDone?`<span class="status-badge work"><span class="status-dot"></span>Чек-лист выполнен`:`<span class="status-badge off"><span class="status-dot"></span>На смене</span>`;
+      allDone?`<span class="status-badge work"><span class="status-dot"></span>Чек-лист выполнен</span>`:`<span class="status-badge off"><span class="status-dot"></span>На смене</span>`;
+    const editBtnHtml=isNanny&&shift.clockOut?`<button class="btn btn-ghost btn-sm" onclick="openNannyEdit('${date}')">✎ Исправить</button>`:'';
     cc.innerHTML+=`<div class="flex items-center justify-between mb-8">
       <div><div style="font-size:0.75rem;color:var(--text3)">Приход</div><div class="text-mono" style="font-size:1.4rem">${shift.clockIn}</div></div>
-      ${shift.clockOut?`<div><div style="font-size:0.75rem;color:var(--text3)">Уход</div><div class="text-mono" style="font-size:1.4rem">${shift.clockOut}</div></div>`:`<div id="live-clock" style="font-family:'JetBrains Mono',monospace;font-size:1.8rem">--:--</div>`}
+      ${shift.clockOut?`<div style="text-align:right"><div style="font-size:0.75rem;color:var(--text3)">Уход</div><div class="text-mono" style="font-size:1.4rem">${shift.clockOut}</div></div>`:`<div id="live-clock" style="font-family:'JetBrains Mono',monospace;font-size:1.8rem">--:--</div>`}
     </div>
     <div class="flex items-center justify-between mt-12">
       ${otInfo}
-      ${!shift.clockOut&&!readonly?`<button class="btn btn-danger btn-sm" onclick="tryClockOut()">■ Уйти</button>`:''}
-    </div>`;
+      <div class="flex gap-8">
+        ${!shift.clockOut&&!readonly?`<button class="btn btn-danger btn-sm" onclick="tryClockOut()">■ Уйти</button>`:''}
+        ${editBtnHtml}
+      </div>
+    </div>
+    ${shift.nannyEditReason?`<div style="margin-top:12px;font-size:0.78rem;color:var(--blue);background:rgba(96,165,250,0.08);border-radius:6px;padding:8px 12px">✎ Причина правки: ${shift.nannyEditReason} <span style="color:var(--text3)">(${shift.editedAt||''})</span></div>`:''}`
+    ;
   }
   el.appendChild(cc);
 
@@ -531,11 +557,22 @@ function toggleTask(taskId){
   const shift=getOrCreate(activeShiftDate);
   if(shift.clockOut) return;
   const cur=shift.tasks[taskId];
-  if(!cur){ shift.tasks[taskId]=true; }
-  else if(cur===true){ shift.tasks[taskId]='na'; openCommentModal(taskId); }
-  else{ delete shift.tasks[taskId]; delete shift.comments[taskId]; }
-  saveShift(activeShiftDate,shift);
-  renderNanny();
+  if(!cur){
+    shift.tasks[taskId]=true;
+    saveShift(activeShiftDate,shift);
+    renderNanny();
+  } else if(cur===true){
+    shift.tasks[taskId]='na';
+    saveShift(activeShiftDate,shift);
+    renderNanny();
+    // open modal AFTER render so it's visible on top
+    openCommentModal(taskId);
+  } else {
+    delete shift.tasks[taskId];
+    delete shift.comments[taskId];
+    saveShift(activeShiftDate,shift);
+    renderNanny();
+  }
 }
 
 function openCommentModal(taskId){
@@ -600,7 +637,13 @@ function tryClockOut(){
 function confirmClockOut(){
   closeModal('close-confirm-modal');
   const shift=getOrCreate(activeShiftDate);
-  shift.clockOut=nowTime();
+  const t=nowTime();
+  shift.clockOut=t;
+  if(!shift.weekendMode){
+    const cfg=getCfg();
+    const otMins=toMins(t)-cfg.overtimeStartHour*60;
+    shift.overtime=otMins>15;
+  }
   const {total}=calcSalary(shift);
   shift.salary=total;
   saveShift(activeShiftDate,shift);
@@ -612,6 +655,82 @@ function startClock(){
   if(clockInterval) clearInterval(clockInterval);
   function tick(){ const e=document.getElementById('live-clock'); if(e) e.textContent=nowTime(); }
   tick(); clockInterval=setInterval(tick,10000);
+}
+
+// ─── NANNY SELF-EDIT ──────────────────────────────────────────────────────────
+function openNannyEdit(date){
+  const shift=getOrCreate(date);
+  const tasks=getTasks().filter(t=>taskActiveOnDate(t,date));
+  document.getElementById('nanny-edit-reason').value='';
+  document.getElementById('nanny-edit-reason-err').style.display='none';
+
+  let body=`<div class="form-row"><label class="form-label">Приход</label>
+    <input class="form-input" type="time" id="ne-clockin" value="${shift.clockIn||''}"></div>
+  <div class="form-row"><label class="form-label">Уход</label>
+    <input class="form-input" type="time" id="ne-clockout" value="${shift.clockOut||''}"></div>
+  <div style="margin-top:4px"><div class="card-title">Задачи</div>`;
+  tasks.forEach(t=>{
+    const state=shift.tasks[t.id];
+    const comment=shift.comments[t.id]||'';
+    body+=`<div class="task-edit-item">
+      <select id="ne-task-${t.id}" style="background:var(--surface2);border:0.5px solid var(--border2);border-radius:6px;color:var(--text);padding:4px 8px;font-size:0.8rem;outline:none">
+        <option value="" ${!state?'selected':''}>Не выполнено (вычет)</option>
+        <option value="true" ${state===true?'selected':''}>✓ Выполнено</option>
+        <option value="na" ${state==='na'?'selected':''}>— Без вычета (с причиной)</option>
+      </select>
+      <span style="font-size:0.85rem;flex:1">${t.label}</span>
+    </div>
+    ${state==='na'?`<div style="padding:0 0 6px 0"><input class="form-input" id="ne-comment-${t.id}" style="font-size:0.8rem;padding:6px 10px" placeholder="Причина..." value="${comment}"></div>`:
+    `<div id="ne-comment-wrap-${t.id}"></div>`}`;
+  });
+  body+=`</div>`;
+  document.getElementById('nanny-edit-body').innerHTML=body;
+  document.getElementById('nanny-edit-modal').classList.add('open');
+  // store date for save
+  document.getElementById('nanny-edit-modal').dataset.date=date;
+}
+
+function saveNannyEdit(){
+  const reason=document.getElementById('nanny-edit-reason').value.trim();
+  if(!reason){ document.getElementById('nanny-edit-reason-err').style.display='block'; return; }
+  const date=document.getElementById('nanny-edit-modal').dataset.date;
+  const shift=getOrCreate(date);
+  const tasks=getTasks().filter(t=>taskActiveOnDate(t,date));
+
+  shift.clockIn=document.getElementById('ne-clockin').value||shift.clockIn;
+  shift.clockOut=document.getElementById('ne-clockout').value||shift.clockOut;
+
+  // re-check overtime with updated clockOut
+  if(!shift.weekendMode&&shift.clockOut){
+    const cfg=getCfg();
+    const otMins=toMins(shift.clockOut)-cfg.overtimeStartHour*60;
+    shift.overtime=otMins>15;
+  }
+
+  tasks.forEach(t=>{
+    const sel=document.getElementById('ne-task-'+t.id);
+    if(!sel) return;
+    const val=sel.value;
+    if(val==='') delete shift.tasks[t.id];
+    else if(val==='true') shift.tasks[t.id]=true;
+    else{
+      shift.tasks[t.id]='na';
+      const ci=document.getElementById('ne-comment-'+t.id);
+      if(ci) shift.comments[t.id]=ci.value.trim();
+    }
+  });
+
+  shift.edited=true;
+  shift.nannyEditReason=reason;
+  shift.editedAt=new Date().toLocaleString('ru-RU');
+  shift.editedBy='nanny';
+
+  const {total}=calcSalary(shift);
+  shift.salary=total;
+  saveShift(date,shift);
+  syncToSheets(shift);
+  closeModal('nanny-edit-modal');
+  renderNanny();
 }
 
 // ─── HISTORY TAB ──────────────────────────────────────────────────────────────
@@ -627,10 +746,13 @@ function renderHistory(){
     dates.forEach(d=>{
       const s=shifts[d];
       const {deduct,total}=calcSalary(s);
-      const badge=s.weekendMode?'<span class="badge badge-blue">Выходной</span>':toMins(s.clockOut)>getCfg().overtimeStartHour*60?'<span class="badge badge-amber">Переработка</span>':'<span class="badge badge-green">Будни</span>';
-      const edt=s.edited?'<span class="badge badge-gray" style="margin-left:4px">✎</span>':'';
+      const badge=s.weekendMode?'<span class="badge badge-blue">Выходной</span>':s.overtime?'<span class="badge badge-amber">Переработка</span>':'<span class="badge badge-green">Будни</span>';
+      const editMark=s.edited?(s.editedBy==='nanny'
+        ?`<span class="badge badge-blue" style="margin-left:4px" title="Правка няни: ${s.nannyEditReason||''}">✎ няня</span>`
+        :`<span class="badge badge-gray" style="margin-left:4px">✎</span>`)
+        :'';
       html+=`<tr>
-        <td>${fmtDate(d)}${edt}</td>
+        <td>${fmtDate(d)}${editMark}</td>
         <td>${s.clockIn||'—'}</td>
         <td>${s.clockOut||'<span style="color:var(--text3)">в процессе</span>'}</td>
         <td>${badge}</td>
@@ -669,8 +791,15 @@ function openEditModal(date){
     tasksHtml+=`</div>`;
   }
   document.getElementById('edit-modal-body').innerHTML=`
+    ${shift.nannyEditReason?`<div class="edited-notice" style="margin-bottom:14px">✎ Няня исправила запись: <strong>${shift.nannyEditReason}</strong> <span style="color:var(--text3);font-size:0.75rem">(${shift.editedAt||''})</span></div>`:''}
     <div class="form-row"><label class="form-label">Приход</label><input class="form-input" type="time" value="${shift.clockIn||''}" onchange="editField('${date}','clockIn',this.value)"></div>
     <div class="form-row"><label class="form-label">Уход</label><input class="form-input" type="time" value="${shift.clockOut||''}" onchange="editField('${date}','clockOut',this.value)"></div>
+    <div class="form-row"><label class="form-label">Переработка после ${getCfg().overtimeStartHour}:00</label>
+      <select class="form-input" onchange="editField('${date}','overtime',this.value==='true')">
+        <option value="false" ${!shift.overtime?'selected':''}>Нет</option>
+        <option value="true" ${shift.overtime?'selected':''}>Да (начислить)</option>
+      </select>
+    </div>
     <div class="form-row"><label class="form-label">Тип дня</label>
       <select class="form-input" onchange="editField('${date}','weekendMode',this.value==='true')">
         <option value="false" ${!shift.weekendMode?'selected':''}>Будни</option>
@@ -943,18 +1072,22 @@ function saveNewTask(){
 // ─── SYNC ─────────────────────────────────────────────────────────────────────
 function syncToSheets(shift){
   const {deduct,overtimePay,bonus,total}=calcSalary(shift);
+  const nannyReason=shift.nannyEditReason||'';
   const params=new URLSearchParams({
-    date:shift.date,
+    date:shift.date||'',
     clockIn:shift.clockIn||'',
     clockOut:shift.clockOut||'',
-    type:shift.weekendMode?'Выходной':overtimePay>0?'Переработка':'Будни',
-    deduct,
-    overtime:overtimePay,
-    bonus,
-    total,
-    edited:shift.edited?'да':'нет'
+    type:shift.weekendMode?'Выходной':shift.overtime?'Переработка':'Будни',
+    deduct:String(deduct),
+    overtime:String(overtimePay),
+    bonus:String(bonus),
+    total:String(total),
+    edited:shift.edited?'да':'нет',
+    editReason:nannyReason
   });
-  fetch(SHEETS_URL+'?'+params.toString(),{method:'GET',mode:'no-cors'}).catch(()=>{});
+  // Use an image request — bypasses CORS for GET to Apps Script
+  const img=new Image();
+  img.src=SHEETS_URL+'?'+params.toString();
 }
 
 function syncAll(){
@@ -962,7 +1095,11 @@ function syncAll(){
   let count=0;
   Object.values(shifts).forEach(s=>{ if(s.clockOut){ syncToSheets(s); count++; } });
   const msg=document.getElementById('sync-msg');
-  if(msg){ msg.textContent=`Отправлено ${count} записей...`; setTimeout(()=>{ msg.textContent=`✓ Готово`; },1500); }
+  if(msg){
+    msg.textContent='Отправляем '+count+' записей...';
+    msg.style.color='var(--text2)';
+    setTimeout(()=>{ msg.textContent='✓ Готово — проверьте таблицу'; msg.style.color='var(--green)'; },2000);
+  }
 }
 
 // ─── UTILS ────────────────────────────────────────────────────────────────────
